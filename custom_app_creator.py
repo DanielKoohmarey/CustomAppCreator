@@ -18,10 +18,13 @@ import os
 import time
 import app_web_driver
 
+import requests.packages.urllib3
+requests.packages.urllib3.disable_warnings()
+
 class AppCreator(object):
     json_headers = {
-                        "Content-Type" : "application/json",
-                        "Accept" : "application/json"
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
                     }
     
     def __init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
@@ -29,13 +32,13 @@ class AppCreator(object):
         self.instance_prefix = instance_prefix 
         self.auth_pair = user,pwd
         self.app_name = app_name
-        self.table_name = 'u_'+ app_name.replace(" ","_")
+        self.table_name = 'u_'+ app_name.replace(" ","_").lower()
         self.app_prefix = app_prefix
         
         self.web_driver = app_web_driver.AppWebDriver(instance_prefix)
         self.state_variables = prev_state
         if not self.state_variables:
-            self.state_variables['state'] = 17
+            self.state_variables['state'] = 1
         self.logged = []
         self.state_map = {
                             1: (self.create_custom_table,
@@ -81,10 +84,11 @@ class AppCreator(object):
         self.logged.append((self.state_variables['state'],message))
         print message
  
-    def get_progress_string(self):
+    def get_progress_string(self, state_started = False):
         completion_state = float(len(self.state_map))
+        progress = round(((self.state_variables['state']-state_started)/completion_state)*100)
         progress_string = "Step {} of {} ({}%) ".format(self.state_variables['state'],completion_state,
-                                                        round((self.state_variables['state']/completion_state)*100))
+                                                        progress)
         return progress_string
                                                             
     def get_json_response_key(self, key, url, post_data = ""):
@@ -966,20 +970,20 @@ class AppCreator(object):
         return self.verify_post_data(url, post_data)
                         
     def run(self):
-        self.log("Starting run from step {}...".format(self.state_variables['state']))
+        self.log("Starting run from step {} to create {}...".format(self.state_variables['state'], self.app_name))
         start_time = time.time()
         
         while(self.state_variables['state'] <= len(self.state_map)):
             state_func, state_desc = self.state_map[self.state_variables['state']]
                         
-            self.log("{} STARTED: {}".format(self.get_progress_string(), state_desc))
+            self.log("{} STARTED: {}".format(self.get_progress_string(True), state_desc), False)
             success, log = state_func()
   
             if success:
                 self.log(log)
                 self.log("{} SUCCESS: Completed step successfully.".format(self.get_progress_string()), False)
             else:
-                self.log("{} FAILURE: {}".format(self.get_progress_string(), log), False)
+                self.log("{} FAILURE: {}".format(self.get_progress_string(True), log), False)
                 self.log("Ending run prematurely...", False)
                 self.save_state()
                 break
