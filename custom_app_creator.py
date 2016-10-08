@@ -7,8 +7,15 @@ Created on Sat Sep  3 13:51:07 2016
 
 Copyright (c) Pericror 2016
 
-TODO: convert prints to log function that stores all logged messages in list, on run send email list somewhere
-On crash, run 'ps' command and kill outstand Firefox / Xvfb
+TODO: Move main to another file, that calls email functionality to monitor, creates custom app creator object for every
+rx email, then emails results pulled from the app.logged
+
+Run on AWS
+http://stackoverflow.com/questions/21193988/keep-server-running-on-ec2-instance-after-ssh-is-terminated
+
+Dependencies: 
+    sudo pip install requests
+    sudo pip install --upgrade google-api-python-client
 """
 import json
 import pickle
@@ -41,39 +48,41 @@ class AppCreator(object):
             self.state_variables['state'] = 1
         self.logged = []
         self.state_map = {
-                            1: (self.create_custom_table,
+                            1: (self.check_for_custom_table,
+                                     "Check if the custom app table already exists."),
+                            2: (self.create_custom_table,
                                      "Create the custom app table & retrieve the app sys id."),
-                            2: (self.setup_custom_app_role,
+                            3: (self.setup_custom_app_role,
                                      "Create custom app role and apply to app."),
-                            3: (self.set_custom_group_role,
+                            4: (self.set_custom_group_role,
                                      "Create the group record & assign custom role to group."),
-                            4: (self.create_live_feed_group,
+                            5: (self.create_live_feed_group,
                                      "Create the live feed group."),
-                            5: (self.create_knowledge_base,
+                            6: (self.create_knowledge_base,
                                      "Create the knowledge base & retrieve the knowledge sys id."),
-                            6: (self.create_user_criteria_record,
+                            7: (self.create_user_criteria_record,
                                      "Create a user criteria record & retrieve the criteria sys id."),
-                            7: (self.create_can_contribute_record,
+                            8: (self.create_can_contribute_record,
                                      "Create a can contribute record."),
-                            8: (self.create_email_notification_records,
+                            9: (self.create_email_notification_records,
                                      "Create email notification records."),
-                            9: (self.create_inbound_email_actions,
+                            10: (self.create_inbound_email_actions,
                                      "Retrieve the plus sys id & create inbound email actions."),
-                            10: (self.create_modules,
+                            11: (self.create_modules,
                                       "Retrieve the page sys id & create modules."),
-                            11: (self.create_reports,
+                            12: (self.create_reports,
                                       "Create reports."),
-                            12: (self.add_reports,
+                            13: (self.add_reports,
                                       "Add reports to overview."),
-                            13: (self.create_assignment_rules,
+                            14: (self.create_assignment_rules,
                                       "Create assignment rules."),                                      
-                            14: (self.setup_slas,
+                            15: (self.setup_slas,
                                       "Create SLAs & save P1-P4 sla sys ids & create escalation rule."),
-                            15: (self.create_catalog_category,
+                            16: (self.create_catalog_category,
                                       "Create catalog category & save category sys id."),
-                            16: (self.create_record_producer,
+                            17: (self.create_record_producer,
                                       "Create record producer & save producer sys id."),
-                            17: (self.create_catalog_item,
+                            18: (self.create_catalog_item,
                                       "Create catalog item & save item sys id.")
                         }
 
@@ -140,6 +149,23 @@ class AppCreator(object):
             log = "PUT {} response had status code 200.".format(path)
             
         return success, log
+
+    def check_for_custom_table(self):
+        success = False
+        log = "The {} table already exists.".format(self.app_name)
+        url = "https://{}.service-now.com/api/now/table/sys_dictionary?"\
+                "sysparm_query=name%3D{}&sysparm_limit=1".format(self.instance_prefix, self.table_name)
+        response = requests.get(url, auth=self.auth_pair, headers=self.json_headers)
+        if response.status_code == 200:
+            if not response.json()['result']:
+                success = True
+                log = "The {} table does not exist.".format(self.app_name)
+            
+        else:
+            log = "GET query for table name did not have status code 200."
+        
+        return success, log
+            
 
     def create_custom_table(self):
         # Create the custom table
@@ -221,7 +247,7 @@ class AppCreator(object):
         url = 'https://{}.service-now.com/api/now/table/kb_knowledge_base'.format(instance_prefix)
         post_data = json.dumps({
                                     'description': "Read self-help articles and learn more about {}".format(self.app_name),
-                                    'active': True,
+                                    'active': False,
                                     'retire_workflow': '3d18ef12c30031000096dfdc64d3aeb6',
                                     'workflow': 'fbe441019f112100d8f8700c267fcf1a',
                                     'title': self.app_name,
@@ -993,13 +1019,26 @@ class AppCreator(object):
         time_elapsed = time.time() - start_time
         self.log("Run completed in {}min {}s.".format(str(time_elapsed // 60).split('.')[0],
                                                     str(time_elapsed % 60).split('.')[0]))                                                    
-           
+
     def save_state(self):
         backup_state = open('backup_state.pkl', 'wb')
         pickle.dump(self.state_variables, backup_state)
         backup_state.close()
         self.log("State variables saved in backup_state.pkl.", False)
-
+        
+    def get_html_results(self):
+        html = "<h3>Run Variables</h3>"
+        html += "Instance Prefix: {}<br/>"\
+                "App Name: {}<br/>"\
+                "App Prefix: {}<br/>"\
+                "Table Name: {}<br/>".format(self.instance_prefix, self.app_name,
+                                                self.app_prefix, self.table_name)
+        html += "<h3>State Variables</h3>"
+        html += "<br/>".join(["{}: {}".format(key,value) for key,value in self.state_variables.items()])
+        html += "<h3>Log</h3>"
+        html += "<br/>".join([step_msg[1] for step_msg in self.logged])
+        return html        
+        
 if __name__ == '__main__':
         if len(sys.argv) < 6 :
             print "Usage: {} [instance prefix] [user] [password] [app name]"\
@@ -1020,3 +1059,17 @@ if __name__ == '__main__':
                                  
         app_creator.run()
         app_creator.web_driver.end_session()
+        
+        import gmail_wrapper
+        wrapper = gmail_wrapper.GmailWrapper()
+        
+        success = "FAILED"
+        if app_creator.state_variables['state'] > len(app_creator.state_map):
+            success = "SUCCEEDED"
+        subject = "{} creation: {}".format(app_creator.app_name, success)        
+        
+        html = "<h2>{} Automation Report</h2>".format(app_name)
+        plain = str(app_creator.logged)
+        
+        message = wrapper.create_message(subject, plain, html)
+        wrapper.send_message(message)        
