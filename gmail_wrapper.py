@@ -15,7 +15,7 @@ from oauth2client.file import Storage
 class GmailWrapper(object):
 
     SCOPES = 'https://www.googleapis.com/auth/gmail.modify'
-    CLIENT_SECRET_FILE = 'client_secret.json'
+    CLIENT_SECRET_FILE = 'client_secret.json' # https://console.developers.google.com/apis/credentials
     APPLICATION_NAME = "Pericror Custom App Creator"
     SENDER = 'pericror@gmail.com'
     RECIPIENT = 'info@pericror.com'

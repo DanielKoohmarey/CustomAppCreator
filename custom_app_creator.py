@@ -112,13 +112,16 @@ class AppCreator(object):
             response = requests.get(url, auth=self.auth_pair, 
                                     headers=self.json_headers)
     
-        if response.status_code == 200:
-            json_response = response.json()['result'][0]
-        elif response.status_code == 201:
-            json_response = response.json()['result']
-        else:
-            log = "Unsuccessful response code from {}: {}.".format(path, response.status_code)
-            json_response = {}
+        try:
+            if response.status_code == 200:
+                json_response = response.json()['result'][0]
+            elif response.status_code == 201:
+                json_response = response.json()['result']
+            else:
+                log = "Unsuccessful response code from {}: {}.".format(path, response.status_code)
+                json_response = {}
+        except:
+            log = "Error parsing result field in json response from {}".format(path)
     
         if key in json_response:
             return_value = json_response[key]
@@ -1025,19 +1028,77 @@ class AppCreator(object):
         pickle.dump(self.state_variables, backup_state)
         backup_state.close()
         self.log("State variables saved in backup_state.pkl.", False)
-        
+
     def get_html_results(self):
+        td_style = 'padding:10px;text-align:left;border: 1px solid #ddd;'
+        td_head_style = 'background-color:#00aeef;color:white;'        
+        # Run variable report
+        row_highlight = 'background-color:#ffffff'        
         html = "<h3>Run Variables</h3>"
-        html += "Instance Prefix: {}<br/>"\
-                "App Name: {}<br/>"\
-                "App Prefix: {}<br/>"\
-                "Table Name: {}<br/>".format(self.instance_prefix, self.app_name,
-                                                self.app_prefix, self.table_name)
+        run_variables = [
+                            ('Instance Prefix',self.instance_prefix),
+                            ('App Name',self.app_name),
+                            ('App Prefix',self.app_prefix),
+                            ('Table Name',self.table_name)
+                         ]
+        html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
+                "'{0}{1}'><b>Variable</b></td><td style='{0}{1}'><b>Value</b>"\
+                "</td></tr></thead><tbody>".format(td_style, td_head_style)
+        for i in range(len(run_variables)):
+            html += "<tr><td style='{0}{1}'>{2}</td><td style='{0}{1}'>{3}</td></tr>".format(
+                        td_style, row_highlight, run_variables[i][0], run_variables[i][1])
+            if row_highlight == 'background-color:#ffffff':
+                row_highlight = 'background-color:#f2f2f2'
+            else:
+                row_highlight = 'background-color:#ffffff'                         
+        html += "</tbody></table>"
+        # State variable report
+        row_highlight = 'background-color:#ffffff'                
         html += "<h3>State Variables</h3>"
-        html += "<br/>".join(["{}: {}".format(key,value) for key,value in self.state_variables.items()])
+        html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
+                "'{0}{1}'><b>Variable</b></td><td style='{0}{1}'><b>Value</b>"\
+                "</td></tr></thead><tbody>".format(td_style, td_head_style)
+                
+        for key,value in self.state_variables.items():
+            if key == 'state':
+                continue
+            html += "<tr><td style='{0}{1}'>{2}</td><td style='{0}{1}'>{3}</td></tr>".format(
+                        td_style, row_highlight, key, value)
+            if row_highlight == 'background-color:#ffffff':
+                row_highlight = 'background-color:#f2f2f2'
+            else:
+                row_highlight = 'background-color:#ffffff'            
+        html += "</tbody></table>"
+        # Log report
+        row_highlight = 'background-color:#ffffff'        
         html += "<h3>Log</h3>"
-        html += "<br/>".join([step_msg[1] for step_msg in self.logged])
-        return html        
+        html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
+                "'{0}{1}'><b>Step</b></td><td style='{0}{1}'><b>Description</b>"\
+                "</td></tr></thead><tbody>".format(td_style, td_head_style)
+        prev_state = 0
+        for state, description in self.logged:
+            if 'SUCCESS:' in description:
+                html += "<tr><td style='{0}background-color:#00FF7F;'>{2}.</td><td style="\
+                        "'{0}{1}'>{3}</td></tr>".format(td_style, row_highlight, state, description)
+            elif 'FAILURE:' in description:
+                html += "<tr><td style='{0}background-color:#FF6347;'>{2}.</td><td style="\
+                        "'{0}{1}'>{3}</td></tr>".format(td_style, row_highlight, state, description)                
+            elif state == prev_state:
+                html += "<tr><td style='{0}{1}'>{2}.</td><td style="\
+                        "'{0}{1}'><span style='padding-left:15px;'>{3}"\
+                        "</span></td></tr>".format(td_style, row_highlight, state, description.lstrip('\t'))
+            else:
+                html += "<tr><td style='{0}{1}'>{2}.</td><td style="\
+                        "'{0}{1}'>{3}</td></tr>".format(
+                            td_style, row_highlight, state, description)
+            if row_highlight == 'background-color:#ffffff':
+                row_highlight = 'background-color:#f2f2f2'
+            else:
+                row_highlight = 'background-color:#ffffff'
+            prev_state = state
+        html += "</tbody></table>"
+        
+        return html
         
 if __name__ == '__main__':
         if len(sys.argv) < 6 :
@@ -1069,6 +1130,7 @@ if __name__ == '__main__':
         subject = "{} creation: {}".format(app_creator.app_name, success)        
         
         html = "<h2>{} Automation Report</h2>".format(app_name)
+        html += app_creator.get_html_results()
         plain = str(app_creator.logged)
         
         message = wrapper.create_message(subject, plain, html)
