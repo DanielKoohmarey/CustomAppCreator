@@ -81,7 +81,7 @@ class AppWebDriver(object):
 
     def add_reports(self, app_name, expected):
         success = True
-        log = "Reports added successfully."
+        log = "Added {} reports successfully.".format(expected)
         try:
             self.driver.get("https://{}.service-now.com/home.do?sysparm_view={}_overview".format(self.instance_prefix, app_name))
             # Open add content popup
@@ -103,10 +103,10 @@ class AppWebDriver(object):
                     dropzone = "dropzone2"
                 else:
                     dropzone = "dropzone1"
+                time.sleep(2) # allow report to be added before adding the next one
             close_popup = self.driver.find_element_by_class_name("icon-cross-circle")
             close_popup.click()
             # Verify correct number of reports added 
-            time.sleep(5)
             reports_added = len(self.driver.find_elements_by_class_name('report_content'))
             if  reports_added != expected:
                 success = False

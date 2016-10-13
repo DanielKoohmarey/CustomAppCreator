@@ -163,7 +163,8 @@ class AppCreator(object):
             if not response.json()['result']:
                 success = True
                 log = "The {} table does not exist.".format(self.app_name)
-            
+        elif response.status_code == 401:
+            log = "Invalid username/password, could not authenticate request."
         else:
             log = "GET query for table name did not have status code 200."
         
@@ -422,7 +423,7 @@ class AppCreator(object):
                                     'name': self.app_name,
                                     'plus_address': self.app_prefix
                                 })
-        plus_sys_id, log = self.get_json_response_key('sys_id', url)
+        plus_sys_id, log = self.get_json_response_key('sys_id', url, post_data)
         
         if not plus_sys_id:
             return plus_sys_id, log
@@ -668,7 +669,7 @@ class AppCreator(object):
 
     def add_reports(self):
         # Add all created reports to overview page
-        return self.web_driver.add_reports(self.app_name, 5) # 5 reports expected
+        return self.web_driver.add_reports(self.app_name, 4) # 4 reports expected
         
     def create_assignment_rules(self):
         # Create default assignment for all records on new table, new group
