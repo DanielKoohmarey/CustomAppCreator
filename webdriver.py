@@ -104,7 +104,7 @@ class AppWebDriver(object):
                 else:
                     dropzone = "dropzone1"
                 time.sleep(2) # allow report to be added before adding the next one
-            close_popup = self.driver.find_element_by_class_name("icon-cross-circle")
+            close_popup = self.driver.find_element_by_css_selector('a.icon-cross-circle:nth-child(1)')
             close_popup.click()
             # Verify correct number of reports added 
             reports_added = len(self.driver.find_elements_by_class_name('report_content'))
