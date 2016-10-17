@@ -7,6 +7,9 @@ Created on Sat Sep  3 13:51:07 2016
 
 Copyright (c) Pericror 2016
 
+Dependencies: 
+    sudo pip install selenium
+    sudo apt-get install firefox
 """
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,8 +17,6 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import Select
 from pyvirtualdisplay import Display
 import time
-
-#test admin Ref6yht7
 
 class AppWebDriver(object):
     def __init__(self, prefix):
@@ -95,7 +96,7 @@ class AppWebDriver(object):
             # Add available content to grid
             content_select = Select(self.driver.find_elements_by_class_name("home_select_content")[2])
             dropzone = "dropzone1"
-            for content in content_select.options:
+            for content in content_select.options[1:]:
                 content.click()
                 add_button = self.driver.find_element_by_xpath("//*[@id='{}']/a".format(dropzone))
                 add_button.click()
@@ -117,3 +118,12 @@ class AppWebDriver(object):
             log = e        
         
         return success, log
+        
+if __name__ == '__main__':
+    user = 'admin'
+    pwd = 'Ref6yht7'
+    app_prefix = 'test7'
+    app_name = 'testingAutomation7'    
+    app = AppWebDriver('dkoohsc5')
+    app.create_custom_table(user, pwd, app_name, app_prefix)
+    app.add_reports(app_name, 4)    

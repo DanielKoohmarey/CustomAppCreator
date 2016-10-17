@@ -6,6 +6,9 @@ Created on Sat Sep  3 13:51:07 2016
 @company: Pericror
 
 Copyright (c) Pericror 2016
+
+Dependencies: 
+    sudo pip install requests
 """
 import pickle
 import requests
@@ -22,7 +25,8 @@ class AppCreator(object):
                     }
     
     def __init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
-                     prev_state):
+                     prev_state = {}):
+        # TODO: have run_variables dict, redo get html function
         self.instance_prefix = instance_prefix 
         self.auth_pair = user,pwd
         self.app_name = app_name

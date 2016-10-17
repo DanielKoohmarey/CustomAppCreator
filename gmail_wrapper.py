@@ -1,3 +1,18 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Sep  3 13:51:07 2016
+
+@author: Daniel Koohmarey
+@company: Pericror
+
+Copyright (c) Pericror 2016
+
+Run on AWS
+http://stackoverflow.com/questions/21193988/keep-server-running-on-ec2-instance-after-ssh-is-terminated
+
+Dependencies: 
+    sudo pip install --upgrade google-api-python-client
+"""
 import httplib2
 import os
 import argparse
@@ -106,13 +121,14 @@ class GmailWrapper(object):
             
         return success
 
-    def create_message(self, subject, plain, html):
+    def create_message(self, subject, plain, html, recipient = ''):
         """Create a message for an email.
         
         Args:
             subject: The subject of the email message.
             plain: The text of the email message.
             html: The html of the email message.
+            recipient: The receipient of the email message.
         
         Returns:
             An object containing a base64url encoded email object.
@@ -124,7 +140,9 @@ class GmailWrapper(object):
         message.attach(plain_part)
         message.attach(html_part)
         
-        message['To'] = self.RECIPIENT
+        if not recipient:
+            recipient = self.RECIPIENT
+        message['To'] = recipient
         message['From'] = self.SENDER
         message['Subject'] = subject
         
