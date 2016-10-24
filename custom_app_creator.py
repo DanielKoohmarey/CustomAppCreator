@@ -15,7 +15,6 @@ http://stackoverflow.com/questions/21193988/keep-server-running-on-ec2-instance-
 
 Dependencies: 
     sudo pip install requests
-    sudo pip install --upgrade google-api-python-client
 """
 import json
 import pickle

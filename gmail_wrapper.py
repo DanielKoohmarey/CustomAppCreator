@@ -7,8 +7,8 @@ Created on Sat Sep  3 13:51:07 2016
 
 Copyright (c) Pericror 2016
 
-Run on AWS
-http://stackoverflow.com/questions/21193988/keep-server-running-on-ec2-instance-after-ssh-is-terminated
+Notes:
+Run python gmail_wrapper.py --noauth_local_webserver to set up credentials on external machine
 
 Dependencies: 
     sudo pip install --upgrade google-api-python-client
@@ -33,7 +33,7 @@ class GmailWrapper(object):
     CLIENT_SECRET_FILE = 'client_secret.json' # https://console.developers.google.com/apis/credentials
     APPLICATION_NAME = "Pericror Custom App Creator"
     SENDER = 'pericror@gmail.com'
-    RECIPIENT = 'info@pericror.com'
+    RECIPIENT = 'results@pericror.com'
 
     def __init__(self):
         credentials = self.get_credentials()
@@ -121,14 +121,13 @@ class GmailWrapper(object):
             
         return success
 
-    def create_message(self, subject, plain, html, recipient = ''):
+    def create_message(self, subject, plain, html):
         """Create a message for an email.
         
         Args:
             subject: The subject of the email message.
             plain: The text of the email message.
             html: The html of the email message.
-            recipient: The receipient of the email message.
         
         Returns:
             An object containing a base64url encoded email object.
@@ -139,10 +138,8 @@ class GmailWrapper(object):
         html_part = MIMEText(html, 'html')
         message.attach(plain_part)
         message.attach(html_part)
-        
-        if not recipient:
-            recipient = self.RECIPIENT
-        message['To'] = recipient
+
+        message['To'] = self.RECIPIENT
         message['From'] = self.SENDER
         message['Subject'] = subject
         
@@ -168,3 +165,6 @@ class GmailWrapper(object):
             print 'An error occurred: %s' % error 
         
         return success
+        
+if __name__ == '__main__':
+    wrapper = GmailWrapper()

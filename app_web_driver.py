@@ -10,6 +10,10 @@ Copyright (c) Pericror 2016
 Dependencies: 
     sudo pip install selenium
     sudo apt-get install firefox
+If firefox version > 46:    
+   wget https://github.com/mozilla/geckodriver/releases/download/v0.11.1/geckodriver-v0.11.1-linux64.tar.gz
+   tar -zxvf geckodriver-v0.11.1-linux64.tar.gz
+   sudo mv geckodriver /usr/bin
 """
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait

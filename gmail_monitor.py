@@ -4,10 +4,18 @@
 @company: Pericror
 
 Copyright (c) Pericror 2016
+
+Note:
+    Run screen -S server, then python gmail_monitor.py
+    To detach screen, ctrl+a+d
+    To resume, screen -r server
+    To view screens, screen -ls
+    To exit once attached, type exit
 """
 import time
 import datetime
 import gmail_wrapper
+import traceback
 
 from custom_app_creator import CustomAppCreator
 
@@ -70,14 +78,23 @@ def main():
             print "{} Sleeping 5min before checking email... ".format(datetime.datetime.now())
             time.sleep(300) # check mail every 5 min
             
-        if current_day != datetime.date.today().day:
-            current_day = datetime.date.today().day
+        current_date = datetime.date.today()
+        if current_day != current_date.day:
+            current_day = current_date.day
+            date_string = '{}-{}-{}'.format(current_date.month,
+                                            current_date.day,
+                                            current_date.year)
             heartbeat_msg = wrapper.create_message('Gmail Monitor Still Running',
-                                                   '{} Script Heartbeat.'.format(datetime.datetime.now()),
-                                                   '{} Script Heartbeat.'.format(datetime.datetime.now()),
-                                                   'danielkoohmarey@gmail.com')
+                                       "{} Script Heartbeat.".format(date_string),
+                                       "{} Script Heartbeat.".format(date_string))
             wrapper.send_message(heartbeat_msg)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception, e:
+        wrapper = gmail_wrapper.GmailWrapper()
+        crash_string = traceback.format_exc(e)
+        crash_msg = wrapper.create_message('Gmail Monitor Crashed', e,e)
+        wrapper.send_message(crash_msg)
