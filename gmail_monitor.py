@@ -96,5 +96,5 @@ if __name__ == '__main__':
     except Exception, e:
         wrapper = gmail_wrapper.GmailWrapper()
         crash_string = traceback.format_exc(e)
-        crash_msg = wrapper.create_message('Gmail Monitor Crashed', e,e)
+        crash_msg = wrapper.create_message('Gmail Monitor Crashed', crash_string, crash_string)
         wrapper.send_message(crash_msg)
