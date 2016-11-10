@@ -28,8 +28,9 @@ def main():
         unread_msg_id = wrapper.get_unread_message_id()
         if unread_msg_id:
             msg_data = wrapper.get_message_data(unread_msg_id)
-            msg_body = msg_data['body'].split('\r\n')
-            # Check if email is an automation request            
+            msg_body = msg_data['body'].split('\n')
+            msg_body = [elem.rstrip('\r') for elem in msg_body]
+            # Check if email is an automation request
             if not msg_body or msg_body[0] != "Automation Request":
                 wrapper.mark_as_read(unread_msg_id)
                 continue
@@ -77,7 +78,7 @@ def main():
         else:
             print "{} Sleeping 5min before checking email... ".format(datetime.datetime.now())
             time.sleep(300) # check mail every 5 min
-            
+        """    
         current_date = datetime.date.today()
         if current_day != current_date.day:
             current_day = current_date.day
@@ -88,13 +89,17 @@ def main():
                                        "{} Script Heartbeat.".format(date_string),
                                        "{} Script Heartbeat.".format(date_string))
             wrapper.send_message(heartbeat_msg)
+        """
 
 
 if __name__ == '__main__':
     try:
         main()
+    except KeyboardInterrupt:
+        pass
     except Exception, e:
         wrapper = gmail_wrapper.GmailWrapper()
         crash_string = traceback.format_exc(e)
+        print crash_string
         crash_msg = wrapper.create_message('Gmail Monitor Crashed', crash_string, crash_string)
         wrapper.send_message(crash_msg)

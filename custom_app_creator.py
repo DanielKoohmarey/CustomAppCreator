@@ -7,12 +7,6 @@ Created on Sat Sep  3 13:51:07 2016
 
 Copyright (c) Pericror 2016
 
-TODO: Move main to another file, that calls email functionality to monitor, creates custom app creator object for every
-rx email, then emails results pulled from the app.logged
-
-Run on AWS
-http://stackoverflow.com/questions/21193988/keep-server-running-on-ec2-instance-after-ssh-is-terminated
-
 Dependencies: 
     sudo pip install requests
 """
@@ -21,6 +15,7 @@ import pickle
 import requests
 import sys
 import os
+import time
 
 from app_creator import AppCreator
 
@@ -30,7 +25,7 @@ requests.packages.urllib3.disable_warnings() # if python version < 2.7.9
 class CustomAppCreator(AppCreator):
     
     def __init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
-                     prev_state):
+                     prev_state = {}):
         AppCreator.__init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
                                 prev_state)
         self.state_map = {
@@ -72,12 +67,41 @@ class CustomAppCreator(AppCreator):
                                       "Create catalog item & save item sys id.")
                         }  
                                    
+    def create_custom_table(self):
+        # Log in
+        success, log = self.web_driver.login(self.auth_pair[0], self.auth_pair[1])
+        
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+        # Create the custom table
+        success, log = self.web_driver.create_custom_table(self.auth_pair[0], 
+                                                   self.auth_pair[1], 
+                                                   self.app_name,
+                                                   self.app_prefix)
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+        time.sleep(2) # Ensure the table has been created
+        # Save the created applications sys_id field    
+        url = "https://{}.service-now.com/api/now/table/sys_app_application?" \
+                "sysparm_query=titleSTARTSWITH{}&sysparm_limit=1".format(
+                    self.instance_prefix, self.app_name)
+        app_sys_id, log = self.get_json_response_key('sys_id', url)
+        
+        if app_sys_id:
+            self.state_variables['app_sys_id'] = app_sys_id
+            
+        return app_sys_id, log                                    
+                                   
     def setup_custom_app_role(self):
         # Create the custom application role
         url = "https://{}.service-now.com/api/now/table/sys_user_role".format(self.instance_prefix)
         post_data = json.dumps({
                                     'name': self.app_name,
-                                    'description': "This role is required for access"\
+                                    'description': "This role is required for access "\
                                                     "to the {} application.".format(self.app_name)
                                 })
         success, log = self.verify_post_data(url, post_data)
@@ -91,6 +115,23 @@ class CustomAppCreator(AppCreator):
                 self.instance_prefix, self.state_variables['app_sys_id'])
         put_data = "{{'roles':'{}'}}".format(self.app_name)   
         return self.verify_put_data(url, put_data)                              
+
+    def set_role_premissions(self):
+        # Get table dictionary record sys id
+        url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query="\
+                "name%3D.{}.%5Einternal_type%3Dcollection&sysparm_limit=1".format(self.instance_prefix, self.table_name)
+        role_sys_id, log = self.get_json_response_key('sys_id', url)
+
+        if not role_sys_id:
+            return role_sys_id, log
+        else:
+            self.state_variables['role_sys_id'] = role_sys_id
+            self.log(log) 
+        
+        url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(self.instance_prefix,
+                                                                                    self.state_variables['role_sys_id'])
+        put_data = "{{'delete_roles':{}}".format(self.app_name)
+        return self.verify_put_data(url, put_data)
 
     def set_custom_group_role(self):
         # Create the group record
@@ -128,7 +169,7 @@ class CustomAppCreator(AppCreator):
     
     def create_knowledge_base(self):
         # Create the knowledgebase and save the sys_id
-        url = 'https://{}.service-now.com/api/now/table/kb_knowledge_base'.format(instance_prefix)
+        url = 'https://{}.service-now.com/api/now/table/kb_knowledge_base'.format(self.instance_prefix)
         post_data = json.dumps({
                                     'description': "Read self-help articles and learn more about {}".format(self.app_name),
                                     'active': False,
@@ -629,7 +670,7 @@ class CustomAppCreator(AppCreator):
             self.log(log)
         
         # Create sysrule_escalate_interval for Custom App Priority 1 Moderate Escalation
-        url = "https://{}.service-now.com/api/now/table/sysrule_escalate_interval".format(instance_prefix)
+        url = "https://{}.service-now.com/api/now/table/sysrule_escalate_interval".format(self.instance_prefix)
         post_data = json.dumps({
                                     'escalation': self.state_variables['p1_sla_sys_id'],
                                     'escalation_level': '1',
@@ -804,7 +845,7 @@ class CustomAppCreator(AppCreator):
             self.state_variables['record_producer_sys_id'] = record_producer_sys_id
             self.log(log)
 
-        url = "https://{}.service-now.com/api/now/table/item_option_new".format(instance_prefix)
+        url = "https://{}.service-now.com/api/now/table/item_option_new".format(self.instance_prefix)
         # Create short description variable
         post_data = json.dumps({
                                     'map_to_field': True,
@@ -851,7 +892,7 @@ class CustomAppCreator(AppCreator):
         if catalog_item_sys_id:
             self.state_variables['catalog_item_sys_id'] = catalog_item_sys_id
         
-        url = "https://{}.service-now.com/api/now/table/item_option_new".format(instance_prefix)
+        url = "https://{}.service-now.com/api/now/table/item_option_new".format(self.instance_prefix)
         # Create short description variable
         post_data = json.dumps({
                                     'map_to_field': True,
@@ -885,6 +926,15 @@ if __name__ == '__main__':
         print "Usage: {} [instance prefix] [user] [password] [app name]"\
                 "[app prefix] (state file)".format(sys.argv[0])
     """
+    instance_prefix = 'dkoohsc5' 
+    user = 'admin'
+    pwd = 'admin' #'Ref6yht7'
+    auth_pair = user,pwd
+    app_name = 'newTable1'
+    table_name = 'u_'+ app_name
+    app_prefix = 'new1'
+    state_data = {}
+
     if len(sys.argv) > 6:
         state_path = sys.argv[6]
         if not os.path.isfile(state_path):

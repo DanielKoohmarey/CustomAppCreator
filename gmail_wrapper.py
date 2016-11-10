@@ -32,6 +32,7 @@ class GmailWrapper(object):
     SCOPES = 'https://www.googleapis.com/auth/gmail.modify'
     CLIENT_SECRET_FILE = 'client_secret.json' # https://console.developers.google.com/apis/credentials
     APPLICATION_NAME = "Pericror Custom App Creator"
+    AUTHORIZED_FROM = "danielkoohmarey@gmail.com"
     SENDER = 'pericror@gmail.com'
     RECIPIENT = 'results@pericror.com'
 
@@ -72,7 +73,7 @@ class GmailWrapper(object):
         msg_id = None    
         
         try:
-            query = "from:danielkoohmarey@gmail.com is:unread"
+            query = "from:{} is:unread".format(self.AUTHORIZED_FROM)
             response = self.service.users().messages().list(userId='me', maxResults=1,
                                                        q=query).execute()
             if 'messages' in response:
@@ -97,7 +98,8 @@ class GmailWrapper(object):
                 for payload in mime_msg.get_payload():
                     if payload.get_content_type() == 'text/plain':
                         body = payload.get_payload()
-            elif payload.get_content_type() == 'text/plain':
+                        break
+            else:
                 body = mime_msg.get_payload()
             
             to_return = { 'date' : mime_msg['Date'], 'body' : body }

@@ -26,7 +26,6 @@ class AppCreator(object):
     
     def __init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
                      prev_state = {}):
-        # TODO: have run_variables dict, redo get html function
         self.instance_prefix = instance_prefix 
         self.auth_pair = user,pwd
         self.app_name = app_name
@@ -106,6 +105,7 @@ class AppCreator(object):
             
         return success, log
 
+    #TODO: create new app_utilities.py which has reusable functions, dont tie to class
     def check_for_custom_table(self):
         success = False
         log = "The {} table already exists.".format(self.app_name)
@@ -122,30 +122,7 @@ class AppCreator(object):
             log = "GET query for table name did not have status code 200."
         
         return success, log
-            
-
-    def create_custom_table(self):
-        # Create the custom table
-        success, log = self.web_driver.create_custom_table(self.auth_pair[0], 
-                                                   self.auth_pair[1], 
-                                                   self.app_name,
-                                                   self.app_prefix)
-        if not success:
-            return success, log
-        else:
-            self.log(log)
-        time.sleep(2) # Ensure the table has been created
-        # Save the created applications sys_id field    
-        url = "https://{}.service-now.com/api/now/table/sys_app_application?" \
-                "sysparm_query=titleSTARTSWITH{}&sysparm_limit=1".format(
-                    self.instance_prefix, self.app_name)
-        app_sys_id, log = self.get_json_response_key('sys_id', url)
-        
-        if app_sys_id:
-            self.state_variables['app_sys_id'] = app_sys_id
-            
-        return app_sys_id, log                                   
-                        
+                    
     def run(self):
         self.log("Starting run from step {} to create {}...".format(self.state_variables['state'], self.app_name))
         start_time = time.time()
