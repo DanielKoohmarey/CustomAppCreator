@@ -26,13 +26,15 @@ Or:
     To upgrade:
     
     sudo apt-mark unhold firefox
-    sudo apt-get upgrade    
+    sudo apt-get upgrade
+killall -e firefox to when testing to ensure clean up
 """
 import time
 import traceback
 
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import Select
@@ -54,19 +56,6 @@ class AppWebDriver(object):
         except:
             print "Failed to quit webdriver."
         #self.display.stop()
-        
-    def wait_for_element(self, element_id, max_wait):
-        wait = 0
-        element = None
-        while wait < max_wait:
-            elements = self.driver.find_elements_by_id(element_id)
-            if elements:
-                element = elements[0]
-                break
-            else:
-                wait += 1
-                time.sleep(1)
-        return element
 
     def login(self, user, pwd):
         success = True
@@ -85,25 +74,30 @@ class AppWebDriver(object):
         
         return success, log
         
-    def create_custom_table(self, table_name, app_prefix, app_name = '', new_app = True, new_module = True):
+    def create_table(self, table_name, app_prefix, app_name = '', new_module = True):
         success = True
         log = "Custom table created successfully."
         try:
             # Create custom table
             self.driver.get("https://{}.service-now.com/nav_to.do?uri=%2Ftable_columns.do".format(self.instance_prefix))
             self.driver.switch_to.frame(self.driver.find_element_by_tag_name('iframe'))
+            # Fill in table name
             table_name_input = self.driver.find_element_by_name("sysparm_tablelabel")
             table_name_input.send_keys(table_name)
+            # Select extends table
             extends_dropdown = self.driver.find_element_by_xpath("//select[@id='sysparm_extends']/option[@value='task']")
             extends_dropdown.click()
-            number_prefix_input = self.wait_for_element('sysparm_number_prefix', 10)
+            # Enter table number prefix
+            number_prefix_present = expected_conditions.presence_of_element_located((By.ID, 'sysparm_number_prefix'))
+            WebDriverWait(self.driver, 10).until(number_prefix_present)
+            number_prefix_input = self.driver.find_element_by_id('sysparm_number_prefix')            
             number_prefix_input.send_keys(app_prefix)
             if app_name:
                 # Fill in app name field
                 app_name_input = self.driver.find_element_by_name('sysparm_app_name')
                 app_name_input.clear()
                 app_name_input.send_keys()
-            if not new_app:
+            else:
                 # Uncheck new app checkbox
                 new_app_checkbox = self.driver.find_element_by_name('sysparm_new_application')
                 new_app_checkbox.click()
@@ -161,47 +155,33 @@ class AppWebDriver(object):
             log = traceback.format_exc(e)       
         
         return success, log
-        
-    def open_configuration_menu(self, table_name, menu):
+    
+    # Open the additional actions menu and select the 'Configure'-> menu
+    def open_configure_menu(self, table_name, menu):
             self.driver.get("https://{}.service-now.com/{}.do".format(self.instance_prefix, table_name))        
-            # Open Configuration->menu
-            menu_button = self.driver.find_element_by_class_name('icon-menu')
-            menu_button.click()
-            configure_menu = self.driver.find_element_by_xpath("//div[contains(@class, context_item) and text() = 'Configure']")
+            # Open 'Configure'
+            menu_icon = self.driver.find_element_by_class_name('icon-menu')
+            menu_icon.click()
+            configure_menu = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Configure']")
             actions = ActionChains(self.driver)
             actions.move_to_element(configure_menu)
             actions.perform()
-            form_layout = self.driver.find_element_by_xpath("//div[contains(@class, context_item) and text() = '{}']".format(menu))
-            form_layout.click()
+            # Open the 'Configure' sub menu
+            menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = '{}']".format(menu))
+            menu_option.click()
             time.sleep(2) # wait for select options to populate        
         
-    def configure_form_layout(self, table_name, section_name, configuration, new_fields):
-        success = True
-        log = "Form Layout for {} configured successfully.".format(table_name)
-        try:
-            self.open_configuration_menu(table_name, 'Form Layout')
-            section_select = Select(self.driver.find_element_by_id('sysparm_section'))
-            if section_name in [option.text for option in section_select.options]:
-                section_select.select_by_visible_text(section_name)
-                time.sleep(2) # wait for selected options to update
-                # Remove all Selected fields
-                selected_select = Select(self.driver.find_element_by_id('select_1'))
-                remove_selected_button = self.driver.find_element_by_xpath("//a[contains(@class, 'icon-chevron-left')]")          
-                for selected in selected_select.options:
-                    selected.click()
-                    remove_selected_button.click()
-            else:
-                # Create new section
-                section_select.select_by_visible_text('New...')
-                time.sleep(2) # wait for section prompt
-                section_caption_input = self.driver.find_element_by_id('glide_prompt_answer')
-                section_caption_input.send_keys(section_name)
-                section_ok_button = self.driver.find_element_by_id('ok_button')
-                section_ok_button.click()
-                time.sleep(2) # wait for selected options to update
-                
-            # Add new Selected fields
-            available_select = Select(self.driver.find_element_by_id('select_0'))
+    # Helper function to update the 'Selected' column with the given configuration    
+    def update_selected_configuration(self, configuration, new_fields):
+            available_select = Select(self.driver.find_element_by_id('select_0'))   
+            # Remove all 'Selected' fields
+            selected_select = Select(self.driver.find_element_by_id('select_1'))
+            remove_selected_button = self.driver.find_element_by_xpath("//a[contains(@class, 'icon-chevron-left')]")       
+            for selected in selected_select.options:
+                selected.click()
+                remove_selected_button.click()
+            available_select.deselect_all()
+            # Add 'Selected' fields specified in configuration
             add_available_button = self.driver.find_element_by_class_name('icon-chevron-right')
             for add_to_selected in configuration:
                 available_options = [option.text for option in available_select.options]
@@ -225,15 +205,47 @@ class AppWebDriver(object):
                     new_field_name_input.send_keys(add_to_selected)
                     new_field_type_select = Select(self.driver.find_element_by_id('newType'))
                     new_field_type_select.select_by_visible_text(new_fields[add_to_selected])
+                    if new_fields[add_to_selected] == 'Reference':
+                        reference_select = Select(self.driver.find_element_by_id('refTable'))
+                        reference_select.select_by_visible_text(new_fields['References'][add_to_selected])
                     # Add new field to Selected
                     add_field_button = self.driver.find_element_by_id('addButton')
                     add_field_button.click()
                     selected_select = Select(self.driver.find_element_by_id('select_1'))
                     selected_select.deselect_all()
                     selected_select.select_by_visible_text(add_to_selected)
-            
+
             save_button = self.driver.find_element_by_id('sysverb_save')
             save_button.click()
+            
+            time.sleep(5)
+            # Wait for save dialogue to complete
+            #menu_page = expected_conditions.presence_of_element_located((By.ID, 'sysparm_button_close'))
+            #WebDriverWait(self.driver, 10).until(menu_page)
+            
+    def configure_form_layout(self, table_name, section_name, configuration, new_fields):
+        success = True
+        log = "Form Layout for {} {} configured successfully.".format(table_name, section_name)
+        try:
+            self.open_configure_menu(table_name, 'Form Layout')
+            section_select = Select(self.driver.find_element_by_id('sysparm_section'))
+            
+            # Check if section already exists
+            if section_name in [option.text for option in section_select.options]:
+                section_select.select_by_visible_text(section_name)
+            else:
+                # Create new section
+                section_select.select_by_visible_text('New...')
+                section_prompt_present = expected_conditions.presence_of_element_located((By.ID, 'glide_prompt_answer'))
+                WebDriverWait(self.driver, 5).until(section_prompt_present)                
+                section_caption_input = self.driver.find_element_by_id('glide_prompt_answer')
+                section_caption_input.send_keys(section_name)
+                section_ok_button = self.driver.find_element_by_id('ok_button')
+                section_ok_button.click()
+            time.sleep(2) # wait for selected options to update
+                
+            # Add new Selected fields
+            self.update_selected_configuration(configuration, new_fields)
             
         except Exception, e:
             success = False
@@ -245,7 +257,7 @@ class AppWebDriver(object):
         success = True
         log = "Related Lists for {} configured successfully.".format(table_name)
         try:
-            self.open_configuration_menu(table_name, 'Related Lists')
+            self.open_configure_menu(table_name, 'Related Lists')
             available_select = Select(self.driver.find_element_by_id('select_0'))
             add_available_button = self.driver.find_element_by_class_name('icon-chevron-right')
             for add_to_selected in configuration:
@@ -256,9 +268,80 @@ class AppWebDriver(object):
             save_button.click()
         except Exception, e:
             success = False
-            log = traceback.format_exc(e)       
+            log = traceback.format_exc(e)
+        return success, log
+
+    # Helper function to right click and open a label menu
+    def open_label_menu(self, table_name, label, menu):
+            self.driver.get("https://{}.service-now.com/{}.do".format(self.instance_prefix, table_name))
+            label_span = self.driver.find_element_by_xpath("//span[contains(@class, 'label-text') and text() = '{}']".format(label))
+            actions = ActionChains(self.driver)
+            actions.context_click(label_span)
+            actions.perform()
+            menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = '{}']".format(menu))
+            menu_option.click()
+        
+    def configure_label_choices(self, table_name, label, configuration):
+        success = True
+        log = "{} choices for {} configured successfully.".format(label, table_name)
+        try:
+            self.open_label_menu(table_name, label, 'Configure Choices')
+            new_option_input = self.driver.find_element_by_id('newOption')
+            add_item_button = self.driver.find_element_by_id('addButton')
+            for add_to_selected in configuration:
+                new_option_input.clear()
+                new_option_input.send_keys(add_to_selected)
+                add_item_button.click()
+            save_button = self.driver.find_element_by_id('sysverb_save')
+            save_button.click()
+        except Exception, e:
+            success = False
+            log = traceback.format_exc(e)
         
         return success, log
+        
+    def configure_list_layout(self, table_name, configuration, new_fields):    
+        success = True
+        log = "List layout for {} configured successfully.".format(table_name)
+        try:
+            self.driver.get("https://{}.service-now.com/{}.do".format(self.instance_prefix, table_name))
+            number_column = self.driver.find_element_by_xpath("//a[text() = 'Number']")
+            actions = ActionChains(self.driver)
+            actions.context_click(number_column)
+            actions.perform()
+            configure_menu = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Configure']")
+            actions = ActionChains(self.driver)            
+            actions.move_to_element(configure_menu)
+            actions.perform()
+            list_layout_menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'List Layout']")
+            list_layout_menu_option.click()
+            # Add new Selected fields
+            self.update_selected_configuration(configuration, new_fields)
+        except Exception, e:
+            success = False
+            log = traceback.format_exc(e)
+        
+        return success, log
+
+    def get_visual_task_board_url(self, table_name, state_variables):  
+        success = True
+        log = "Visual Task Board for {} configured successfully.".format(table_name)
+        try:
+            self.driver.get("https://{}.service-now.com/{}.do".format(self.instance_prefix, table_name))
+            number_column = self.driver.find_element_by_xpath("//a[text() = 'State']")
+            actions = ActionChains(self.driver)
+            actions.context_click(number_column)
+            actions.perform()
+            show_menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Show Visual Task Board']")        
+            show_menu_option.click()
+            url = self.driver.current_url.lstrip("https://{}.service-now.com".format(self.instance_prefix))
+            state_variables['task_board_url'] = url
+        except Exception, e:
+            success = False
+            log = traceback.format_exc(e)
+        
+        return success, log
+        
 if __name__ == '__main__':
     user = 'admin'
     pwd = 'admin'
@@ -269,17 +352,4 @@ if __name__ == '__main__':
     app.login(user, pwd)
     #app.create_custom_table(app_name, app_prefix)
     #app.add_reports(app_name, 4)
-    #expected_selected = ['|- begin_split -|', 'Number', 'Portfolio', 'Priority',
-    #                     'Configuration item [+]', '|- split -|', 'Assignment group [+]', 'Assigned to [+]',
-    #                    'State', 'Project Size','|- end_split -|', 'Short description','Description']
-    #new_fields = { 'Portfolio' : 'Choice', 'Project Size' : 'Choice'}    
-    #expected_selected = ['|- begin_split -|', 'Planned Start', 'Planned End', 'Estimated Cost', '|- split -|',
-    #                     'Actual Start', 'Actual End', 'Actual Cost', '|- end_split -|']
-    #new_fields = { 'Planned Start' : 'Date/Time', 'Planned End' : 'Date/Time', 'Estimated Cost' : 'Price',
-    #              'Actual Start' : 'Date/Time', 'Actual End' : 'Date/Time', 'Actual Cost': 'Price',} 
-    #expected_selected = ['|- begin_split -|', 'Watch list', '|- split -|', 'Work notes list', '|- end_split -|',
-    #                   'Work notes', 'Additional comments', 'Activities (filtered)']
-    #new_fields = {}
-    #print app.configure_form_layout('u_project', 'Notes', expected_selected, new_fields)
-    configuration = ['Project Task->Parent']
-    print app.configure_related_lists('u_project',configuration)
+    app.end_session()

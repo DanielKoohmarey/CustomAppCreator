@@ -12,6 +12,7 @@ Dependencies:
 """
 import pickle
 import requests
+import json
 import time
 import app_web_driver
 
@@ -24,14 +25,10 @@ class AppCreator(object):
                         "Accept": "application/json"
                     }
     
-    def __init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
-                     prev_state = {}):
+    def __init__(self, instance_prefix, auth_pair, run_variables, prev_state = {}):
         self.instance_prefix = instance_prefix 
-        self.auth_pair = user,pwd
-        self.app_name = app_name
-        self.table_name = 'u_'+ app_name.replace(" ","_").lower()
-        self.app_prefix = app_prefix
-        
+        self.auth_pair = auth_pair
+        self.run_variables = run_variables
         self.web_driver = app_web_driver.AppWebDriver(instance_prefix)
         self.state_variables = prev_state
         if not self.state_variables:
@@ -104,27 +101,26 @@ class AppCreator(object):
             log = "PUT {} response had status code 200.".format(path)
             
         return success, log
-
-    #TODO: create new app_utilities.py which has reusable functions, dont tie to class
-    def check_for_custom_table(self):
+            
+    def check_for_table(self, table_name):
         success = False
-        log = "The {} table already exists.".format(self.app_name)
+        log = "The {} table already exists.".format(table_name)
         url = "https://{}.service-now.com/api/now/table/sys_dictionary?"\
-                "sysparm_query=name%3D{}&sysparm_limit=1".format(self.instance_prefix, self.table_name)
+                "sysparm_query=name%3D{}&sysparm_limit=1".format(self.instance_prefix, table_name)
         response = requests.get(url, auth=self.auth_pair, headers=self.json_headers)
         if response.status_code == 200:
             if not response.json()['result']:
                 success = True
-                log = "The {} table does not exist.".format(self.app_name)
+                log = "The {} table does not exist.".format(table_name)
         elif response.status_code == 401:
             log = "Invalid username/password, could not authenticate request."
         else:
             log = "GET query for table name did not have status code 200."
         
-        return success, log
-                    
+        return success, log 
+            
     def run(self):
-        self.log("Starting run from step {} to create {}...".format(self.state_variables['state'], self.app_name))
+        self.log("Starting run from step {}...".format(self.state_variables['state']))
         start_time = time.time()
         
         while(self.state_variables['state'] <= len(self.state_map)):
@@ -158,32 +154,26 @@ class AppCreator(object):
         td_style = 'padding:10px;text-align:left;border: 1px solid #ddd;'
         td_head_style = 'background-color:#00aeef;color:white;'        
         # Run variable report
-        row_highlight = 'background-color:#ffffff'        
-        html = "<h3>Run Variables</h3>"
-        run_variables = [
-                            ('Instance Prefix',self.instance_prefix),
-                            ('App Name',self.app_name),
-                            ('App Prefix',self.app_prefix),
-                            ('Table Name',self.table_name)
-                         ]
-        html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
-                "'{0}{1}'><b>Variable</b></td><td style='{0}{1}'><b>Value</b>"\
-                "</td></tr></thead><tbody>".format(td_style, td_head_style)
-        for i in range(len(run_variables)):
-            html += "<tr><td style='{0}{1}'>{2}</td><td style='{0}{1}'>{3}</td></tr>".format(
-                        td_style, row_highlight, run_variables[i][0], run_variables[i][1])
-            if row_highlight == 'background-color:#ffffff':
-                row_highlight = 'background-color:#f2f2f2'
-            else:
-                row_highlight = 'background-color:#ffffff'                         
-        html += "</tbody></table>"
+        row_highlight = 'background-color:#ffffff'  
+        if self.run_variables:
+            html = "<h3>Run Variables</h3>"
+            html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
+                    "'{0}{1}'><b>Variable</b></td><td style='{0}{1}'><b>Value</b>"\
+                    "</td></tr></thead><tbody>".format(td_style, td_head_style)
+            for key,value in self.run_variables.items():
+                html += "<tr><td style='{0}{1}'>{2}</td><td style='{0}{1}'>{3}</td></tr>".format(
+                            td_style, row_highlight, key, value)
+                if row_highlight == 'background-color:#ffffff':
+                    row_highlight = 'background-color:#f2f2f2'
+                else:
+                    row_highlight = 'background-color:#ffffff'            
+            html += "</tbody></table>"
         # State variable report
         row_highlight = 'background-color:#ffffff'                
         html += "<h3>State Variables</h3>"
         html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
                 "'{0}{1}'><b>Variable</b></td><td style='{0}{1}'><b>Value</b>"\
                 "</td></tr></thead><tbody>".format(td_style, td_head_style)
-                
         for key,value in self.state_variables.items():
             if key == 'state':
                 continue
@@ -209,6 +199,7 @@ class AppCreator(object):
                 html += "<tr><td style='{0}background-color:#FF6347;'>{2}.</td><td style="\
                         "'{0}{1}'>{3}</td></tr>".format(td_style, row_highlight, state, description)                
             elif state == prev_state:
+                # Add indentation to multiple steps under the same state
                 html += "<tr><td style='{0}{1}'>{2}.</td><td style="\
                         "'{0}{1}'><span style='padding-left:15px;'>{3}"\
                         "</span></td></tr>".format(td_style, row_highlight, state, description.lstrip('\t'))

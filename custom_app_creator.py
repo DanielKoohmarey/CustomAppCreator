@@ -26,8 +26,17 @@ class CustomAppCreator(AppCreator):
     
     def __init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
                      prev_state = {}):
-        AppCreator.__init__(self, instance_prefix, user, pwd, app_name, app_prefix, 
+        self.app_name = app_name
+        self.app_prefix = app_prefix                         
+        self.table_name = 'u_'+ app_name.replace(" ","_").lower()
+        auth_pair = user, pwd
+        run_variables = {}
+        run_variables['app_name'] = app_name
+        run_variables['app_prefix'] = app_prefix
+        run_variables['table_name'] = self.table_name
+        AppCreator.__init__(self, instance_prefix, auth_pair, run_variables, 
                                 prev_state)
+                                
         self.state_map = {
                             1: (self.check_for_custom_table,
                                      "Check if the custom app table already exists."),
@@ -35,38 +44,43 @@ class CustomAppCreator(AppCreator):
                                      "Create the custom app table & retrieve the app sys id."),
                             3: (self.setup_custom_app_role,
                                      "Create custom app role and apply to app."),
-                            4: (self.set_custom_group_role,
+                            4: (self.set_role_permissions,
+                                     "Add delete role to custom role."),                                     
+                            5: (self.set_custom_group_role,
                                      "Create the group record & assign custom role to group."),
-                            5: (self.create_live_feed_group,
+                            6: (self.create_live_feed_group,
                                      "Create the live feed group."),
-                            6: (self.create_knowledge_base,
+                            7: (self.create_knowledge_base,
                                      "Create the knowledge base & retrieve the knowledge sys id."),
-                            7: (self.create_user_criteria_record,
+                            8: (self.create_user_criteria_record,
                                      "Create a user criteria record & retrieve the criteria sys id."),
-                            8: (self.create_can_contribute_record,
+                            9: (self.create_can_contribute_record,
                                      "Create a can contribute record."),
-                            9: (self.create_email_notification_records,
+                            10: (self.create_email_notification_records,
                                      "Create email notification records."),
-                            10: (self.create_inbound_email_actions,
+                            11: (self.create_inbound_email_actions,
                                      "Retrieve the plus sys id & create inbound email actions."),
-                            11: (self.create_modules,
-                                      "Retrieve the page sys id & create modules."),
-                            12: (self.create_reports,
-                                      "Create reports."),
-                            13: (self.add_reports,
-                                      "Add reports to overview."),
-                            14: (self.create_assignment_rules,
-                                      "Create assignment rules."),                                      
-                            15: (self.setup_slas,
-                                      "Create SLAs & save P1-P4 sla sys ids & create escalation rule."),
-                            16: (self.create_catalog_category,
-                                      "Create catalog category & save category sys id."),
-                            17: (self.create_record_producer,
-                                      "Create record producer & save producer sys id."),
-                            18: (self.create_catalog_item,
-                                      "Create catalog item & save item sys id.")
+                            12: (self.create_modules,
+                                     "Retrieve the page sys id & create modules."),
+                            13: (self.create_reports,
+                                     "Create reports."),
+                            14: (self.add_reports,
+                                     "Add reports to overview."),
+                            15: (self.create_assignment_rules,
+                                     "Create assignment rules."),                                      
+                            16: (self.setup_slas,
+                                     "Create SLAs & save P1-P4 sla sys ids & create escalation rule."),
+                            17: (self.create_catalog_category,
+                                     "Create catalog category & save category sys id."),
+                            18: (self.create_record_producer,
+                                     "Create record producer & save producer sys id."),
+                            19: (self.create_catalog_item,
+                                     "Create catalog item & save item sys id.")
                         }  
-                                   
+                        
+    def check_for_custom_table(self):                             
+        return self.check_for_table(self.table_name)               
+                             
     def create_custom_table(self):
         # Log in
         success, log = self.web_driver.login(self.auth_pair[0], self.auth_pair[1])
@@ -76,7 +90,7 @@ class CustomAppCreator(AppCreator):
         else:
             self.log(log)
         # Create the custom table
-        success, log = self.web_driver.create_custom_table(self.auth_pair[0], 
+        success, log = self.web_driver.create_table(self.auth_pair[0], 
                                                    self.auth_pair[1], 
                                                    self.app_name,
                                                    self.app_prefix)
@@ -116,7 +130,7 @@ class CustomAppCreator(AppCreator):
         put_data = "{{'roles':'{}'}}".format(self.app_name)   
         return self.verify_put_data(url, put_data)                              
 
-    def set_role_premissions(self):
+    def set_role_permissions(self):
         # Get table dictionary record sys id
         url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query="\
                 "name%3D.{}.%5Einternal_type%3Dcollection&sysparm_limit=1".format(self.instance_prefix, self.table_name)
@@ -130,7 +144,7 @@ class CustomAppCreator(AppCreator):
         
         url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(self.instance_prefix,
                                                                                     self.state_variables['role_sys_id'])
-        put_data = "{{'delete_roles':{}}".format(self.app_name)
+        put_data = "{{'delete_roles':'{}'}}".format(self.app_name)
         return self.verify_put_data(url, put_data)
 
     def set_custom_group_role(self):
@@ -948,19 +962,3 @@ if __name__ == '__main__':
                              
     app_creator.run()
     app_creator.web_driver.end_session()
-    """
-    import gmail_wrapper
-    wrapper = gmail_wrapper.GmailWrapper()
-    
-    success = "FAILED"
-    if app_creator.state_variables['state'] > len(app_creator.state_map):
-        success = "SUCCEEDED"
-    subject = "{} creation: {}".format(app_creator.app_name, success)        
-    
-    html = "<h2>{} Automation Report</h2>".format(app_name)
-    html += app_creator.get_html_results()        
-    plain = str(app_creator.logged)
-    
-    message = wrapper.create_message(subject, plain, html)
-    wrapper.send_message(message)
-    """
