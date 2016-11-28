@@ -47,18 +47,25 @@ class PMAppCreator(AppCreator):
                             3: (self.configure_project_form_layouts,
                                     "Configure 'Project' form layouts."),
                             4: (self.configure_related_lists,
-                                     "Configure 'Project' related lists."),
+                                    "Configure 'Project' related lists."),
                             5: (self.configure_label_choices,
-                                     "Configure 'Portfolio' & 'Project Size' label choices."),
+                                    "Configure 'Portfolio' & 'Project Size' label choices."),
                             6: (self.configure_project_task_form_layout,
-                                     "Configure 'Project Task' form layout."),
+                                    "Configure 'Project Task' form layout."),
                             7: (self.configure_list_layout,
-                                     "Configure 'Project List' & 'Project Task List' list layout."),
+                                    "Configure 'Project List' & 'Project Task List' list layout."),
                             8: (self.setup_project_app_roles,
                                     "Create project app role and apply to 'Project'."),
                             9: (self.setup_project_group_roles,
-                                    "Create 'Project Manager' group roles."),                                     
-                                   
+                                    "Create 'Project Manager' group roles."),
+                            10: (self.create_reports,
+                                    "Create various project reports."),
+                            11: (self.create_modules,
+                                    "Create project modules."),
+                            12: (self.create_email_notification_records,
+                                    "Create email notifications."),
+                            13: (self.create_business_rule_records,
+                                    "Create business rules.")
                                      
                          }      
                 
@@ -69,6 +76,7 @@ class PMAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+            
         # Check if 'Project Task' table exists
         return self.check_for_table('Project Task')
 
@@ -80,6 +88,7 @@ class PMAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+            
         # Create the 'Project' table
         success, log = self.web_driver.create_custom_table(self.auth_pair[0], 
                                                    self.auth_pair[1], 
@@ -91,6 +100,7 @@ class PMAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+            
         # Save the 'Project' app sys id                                                
         url = "https://{}.service-now.com/api/now/table/sys_app_application?" \
                 "sysparm_query=titleSTARTSWITH{}&sysparm_limit=1".format(self.instance_prefix,
@@ -101,7 +111,8 @@ class PMAppCreator(AppCreator):
             return app_sys_id, log
         else:
             self.state_variables['app_sys_id'] = app_sys_id
-            self.log(log)            
+            self.log(log)   
+            
         # Create the 'Project Task' table
         return self.web_driver.create_custom_table(self.auth_pair[0], 
                                                    self.auth_pair[1], 
@@ -112,7 +123,7 @@ class PMAppCreator(AppCreator):
                                                    False)                                                   
                 
     def configure_project_form_layouts(self):
-        # Configure x form layout        
+        # Configure 'Project' form layout        
         expected_selected = ['|- begin_split -|', 'Number', 'Portfolio', 'Priority',
                              'Configuration item [+]', '|- split -|', 'Assignment group [+]', 'Assigned to [+]',
                             'State', 'Project Size','|- end_split -|', 'Short description','Description']
@@ -123,7 +134,8 @@ class PMAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
-        # Configure y form layout
+            
+        # Configure 'Planning' form layout
         expected_selected = ['|- begin_split -|', 'Planned Start', 'Planned End', 'Estimated Cost', '|- split -|',
                              'Work start', 'Work end', 'Actual Cost', '|- end_split -|']
         new_fields = { 'Planned Start' : 'Date/Time', 'Planned End' : 'Date/Time', 'Estimated Cost' : 'Price',
@@ -134,11 +146,13 @@ class PMAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+            
         # Configure 'Notes' form layout
         expected_selected = ['|- begin_split -|', 'Watch list', '|- split -|', 'Work notes list', '|- end_split -|',
                            'Work notes', 'Additional comments', 'Activities (filtered)']
         new_fields = {}
         success, log = self.web_driver.configure_form_layout('u_project', 'Notes', expected_selected, new_fields)
+        
         return success, log
     
     def configure_related_lists(self):
@@ -154,6 +168,7 @@ class PMAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)        
+        
         # Configure 'Project Size' label
         configuration = ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large']
         success, log = self.web_driver.configure_label_choices('u_project','Project Size', configuration)
@@ -177,6 +192,7 @@ class PMAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)   
+        
         # Configure u_project_task layout
         configuration = ['Number', 'Short description', 'Priority', 'State', 'Assigned to [+]']
         success, log = self.web_driver.configure_list_layout('u_project_task_list', configuration, {})
@@ -192,7 +208,7 @@ class PMAppCreator(AppCreator):
         post_data = json.dumps({
                                     'name': 'project_manager',
                                     'description': "This role is required to create projects"\
-                                                    "in the project management application."
+                                                    " in the project management application."
                                 })
         success, log = self.verify_post_data(url, post_data)
 
@@ -208,57 +224,681 @@ class PMAppCreator(AppCreator):
         return self.verify_put_data(url, put_data)
                 
     def setup_project_group_roles(self):
-       # Create the group record
-       url = "https://{}.service-now.com/api/now/table/sys_user_group".format(self.instance_prefix)
-       post_data = json.dumps({
-           'name': 'Project Managers',
-           'description': "This group contains project managers."
-       })
-       success, log = self.verify_post_data(url, post_data)
+        # Create the group record
+        url = "https://{}.service-now.com/api/now/table/sys_user_group".format(self.instance_prefix)
+        post_data = json.dumps({
+                                    'name': 'Project Managers',
+                                    'description': "This group contains project managers."
+                                })
+        success, log = self.verify_post_data(url, post_data)
     
-       if not success:
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Assign custom role to group
+        url = "https://{}.service-now.com/api/now/table/sys_group_has_role".format(self.instance_prefix)
+        post_data = json.dumps({
+                                   'group': 'Project Managers',
+                                   'role': 'project_manager'
+                               })
+        success, log = self.verify_post_data(url, post_data)
+    
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+    
+        #Assign project_manager and itil roles to project task create/write access
+        url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query="\
+                "name%3Du_project%5Einternal_type%3Dcollection&sysparm_limit=1".format(self.instance_prefix)
+        project_sys_id, log = self.get_json_response_key('sys_id', url)
+
+        if not project_sys_id:
+            return project_sys_id, log
+        else:
+            self.state_variables['project_sys_id'] = project_sys_id
+            self.log(log)
+
+        #GET project dictionary record sys ID    
+        url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(
+                self.instance_prefix, self.state_variables['project_sys_id'])
+        put_data = "{{'write_roles':'project_manager,itil','create_roles':'project_manager','delete_roles':'project_manager'}}"
+        success, log = self.verify_put_data(url, put_data)
+    
+        if not success:
+            return success, log
+        else:
+            self.log(log)    
+    
+        #Assign project_manager role to project create/delete access itil to write
+        url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query="\
+                "name%3Du_project_task%5Einternal_type%3Dcollection&sysparm_limit=1{}".format(self.instance_prefix)
+        project_task_sys_id, log = self.get_json_response_key('sys_id', url)
+
+        if not project_task_sys_id:
+            return project_task_sys_id, log
+        else:
+            self.state_variables['project_task_sys_id'] = project_task_sys_id
+            self.log(log)          
+    
+        #GET project task dictionary record sys ID    
+        url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(
+                    self.instance_prefix, self.state_variables['project_task_sys_id'])
+        put_data = "{{'write_roles':'project_manager,itil','create_roles':'project_manager,itil','delete_roles':'project_manager,itil'}}"
+        return self.verify_put_data(url, put_data)
+
+    def create_reports(self):
+        # Create calendar report for projects
+        url = "https://{}.service-now.com/api/now/table/sys_report".format(self.instance_prefix)
+        post_data = json.dumps({
+                                    'title': "Planned Project Start",
+                                    'table': 'u_project',
+                                    'type': 'calendar',
+                                    'field': 'u_planned_start'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+        
+        # Create calendar report for project tasks
+        url = "https://{}.service-now.com/api/now/table/sys_report".format(self.instance_prefix)
+        post_data = json.dumps({
+                                    'title': "Planned Project Task Start",
+                                    'table': 'u_project_task',
+                                    'type': 'calendar',
+                                    'field': 'u_planned_start'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create Overdue Project Task Report
+        url = "https://{}.service-now.com/api/now/table/sys_report".format(self.instance_prefix)
+        post_data = json.dumps({
+                                    'title': "Overdue Project Tasks",
+                                    'table': 'u_project_task',
+                                    'type': 'list',
+                                    'filter': 'u_planned_end<javascript:gs.minutesAgoStart(0)^active=true'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Projects by portfolio
+        post_data = json.dumps({
+                                   'title': 'Projects by Portfolio',
+                                   'table': 'u_project',
+                                   'field': 'u_portfolio',
+                                   'type': 'pie',
+                               })
+        success, log = self.verify_post_data(url, post_data)
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create open projects by project manager
+        post_data = json.dumps({
+                                   'title': "Open Projects by Project Manager",
+                                   'table': 'u_project',
+                                   'field': 'assigned_to',
+                                   'trend_field': 'state',
+                                   'type': 'bar',
+                                   'filter': 'active=true^EQ'
+                               })
+        success, log = self.verify_post_data(url, post_data)
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create Open project tasks by project
+        post_data = json.dumps({
+                                    'title': "Open Project Tasks by Project",
+                                    'table': 'u_project_task',
+                                    'field': 'parent',
+                                    'trend_field': 'state',
+                                    'type': 'bar',
+                                    'filter': 'active=true^EQ'
+                                })
+        return self.verify_post_data(url, post_data)
+        
+    def create_modules(self):
+        # Create sys_portal_page for overview model
+        url = "https://{}.service-now.com/api/now/table/sys_portal_page".format(self.instance_prefix)
+        post_data = json.dumps({
+                                   'title': "Project Management Overview",
+                                   'selectable': False,
+                                   'view': 'project_overview',
+                                   'roles': 'admin'
+                                })
+        page_sys_id, log = self.get_json_response_key('sys_id', url, post_data)
+
+        if not page_sys_id:
+            return page_sys_id, log
+        else:
+            self.state_variables['page_sys_id'] = page_sys_id
+            self.log(log)
+        
+        # Create 'Overview' model
+        url = "https://{}.service-now.com/api/now/table/sys_app_module".format(self.instance_prefix)
+        post_data = json.dumps({
+                                   'title': 'Overview',
+                                   'active': True,
+                                   'order': '100',
+                                   'link_type': 'HOMEPAGE',
+                                   'homepage': self.state_variables['page_sys_id'],
+                                   'application': 'Project Management'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
            return success, log
-       else:
+        else:
            self.log(log)
-       # Assign custom role to group
-       url = "https://{}.service-now.com/api/now/table/sys_group_has_role".format(self.instance_prefix)
-       post_data = json.dumps({
-           'group': 'Project Managers',
-           'role': 'project_manager'
-       })
-       success, log = self.verify_post_data(url, post_data)
-    
-       if not success:
+           
+        # Create 'Taskboard' module
+        post_data = json.dumps({
+                                    'title': "Taskboard",
+                                    'active': True,
+                                    'order': '150',
+                                    'link_type': 'DIRECT',
+                                    'application': 'Project Management',
+                                    'roles': 'project_manager',
+                                    'argument': self.state_variables['task_board_url']
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create 'Create New' module
+        post_data = json.dumps({
+                                    'title': "Create New",
+                                    'active': True,
+                                    'order': '200',
+                                    'link_type': 'NEW',
+                                    'name': 'u_project',
+                                    'application': 'Project Management',
+                                    'roles':'project_manager'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
            return success, log
-       else:
+        else:
            self.log(log)
-    
-    
-       #Assign project_manager and itil roles to project task create/write access
-       #GET project dictionary record sys ID
-       url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query=name%3Du_project%5Einternal_type%3Dcollection&sysparm_limit=1".format(
-           self.instance_prefix)
-       project_sys_id = self.get_data(url)
-    
-    
-       url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(
-           self.instance_prefix, self.state_variables['project_sys_id'])
-       put_data = "{{'write_roles':'project_manager,itil','create_roles':'project_manager','delete_roles':'project_manager'}}"
-       return self.verify_put_data(url, put_data)
-    
-    
-       #Assign project_manager role to project create/delete access itil to write
-       #GET project task dictionary record sys ID
-       url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query=name%3Du_project_task%5Einternal_type%3Dcollection&sysparm_limit=1{}".format(
-           self.instance_prefix)
-       project_task_sys_id = self.get_data(url)
-    
-    
-    
-    
-       url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(
-           self.instance_prefix, self.state_variables['project_sys_id'])
-       put_data = "{{'write_roles':'project_manager,itil','create_roles':'project_manager,itil','delete_roles':'project_manager,itil'}}"
-       return self.verify_put_data(url, put_data)
-       #Create homepage named Overview, and link homepage module
-      
+
+        # Create 'My Projects' module
+        post_data = json.dumps({
+                                    'title': 'My Projects',
+                                    'active': True,
+                                    'order': '300',
+                                    'link_type': 'LIST',
+                                    'name': 'u_project',
+                                    'application': 'Project Management',
+                                    'filter': 'active=true^assigned_to=javascript:getMyAssignments()^EQ'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+           
+        # Create 'Work in Progress' module
+        post_data = json.dumps({
+                                    'title': "Work in Progress",
+                                    'active': True,
+                                    'order': '400',
+                                    'link_type': 'LIST',
+                                    'name': 'u_project',
+                                    'application': 'Project Management',
+                                    'filter': 'active=true^state=2^EQ'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+           
+        # Create 'All' module
+        post_data = json.dumps({
+                                    'title': "All",
+                                    'active': True,
+                                    'order': '500',
+                                    'link_type': 'LIST',
+                                    'name': 'u_project',
+                                    'application': 'Project Management',
+                                    'filter': 'active=true^EQ'
+                                 })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+        
+        # Create 'Tasks' separator module
+        post_data = json.dumps({
+                                    'title': 'Tasks',
+                                    'active': True,
+                                    'order': '600',
+                                    'link_type': 'SEPARATOR',
+                                    'application': 'Project Management'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+        
+        # Create 'Assigned to me' module
+        post_data = json.dumps({
+                                    'title': 'Assigned to me',
+                                    'active': True,
+                                    'order': '700',
+                                    'link_type': 'LIST',
+                                    'name': 'u_project_task',
+                                    'application': 'Project Management',
+                                    'filter': 'active=true^assigned_to=javascript:getMyAssignments()^EQ'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create 'Work in Progress' module
+        post_data = json.dumps({
+                                    'title': 'Work in Progress',
+                                    'active': True,
+                                    'order': '800',
+                                    'link_type': 'LIST',
+                                    'name': 'u_project_task',
+                                    'application': 'Project Management',
+                                    'filter': 'active=true^state=2^EQ'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+        
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+           
+        # Create 'All' module
+        post_data = json.dumps({
+                                    'title': 'All',
+                                    'active': True,
+                                    'order': '900',
+                                    'link_type': 'LIST',
+                                    'name': 'u_project_task',
+                                    'application': 'Project Management',
+                                    'filter': 'active=true^EQ'
+                                })
+        
+        return self.verify_post_data(url, post_data)
+
+    def create_email_notification_records(self):
+        # Create email notification record for when Project commented
+        url = "https://{}.service-now.com/api/now/table/sysevent_email_action".format(self.instance_prefix)
+        post_data = json.dumps({
+                                    'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'send_self': False,
+                                    'name': 'Project Commented',
+                                    'recipient_fields': "opened_by,assigned_to,watch_list",
+                                    'collection': 'u_project',
+                                    'condition': 'commentsVALCHANGES^EQ',
+                                    'subject': "Project ${{number}} -- comments added",
+                                    'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                       <div>Click here to view Project: ${{URI_REF}}</div>
+                                                       <div><hr/></div>
+                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Comments:</div>
+                                                       <div>${{comments}}</div>
+                                                       <div>&nbsp;</div>"""
+                                })
+        success, log = self.verify_post_data(url, post_data)
+        
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        #Create email notification record for when Project task commented
+        post_data = json.dumps({
+                                   'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                   'action_update': True,
+                                   'send_self': False,
+                                   'name': 'Project Task Commented',
+                                   'recipient_fields': "opened_by,assigned_to,watch_list",
+                                   'collection': 'u_project_task',
+                                   'condition': 'commentsVALCHANGES^EQ',
+                                   'subject': "Project Task ${{number}} -- comments added",
+                                   'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                       <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                                       <div><hr/></div>
+                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Comments:</div>
+                                                       <div>${{comments}}</div>
+                                                       <div>&nbsp;</div>"""
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create email notification record for when Project work noted
+        url = "https://{}.service-now.com/api/now/table/sysevent_email_action".format(self.instance_prefix)
+        post_data = json.dumps({
+                                   'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                   'action_update': True,
+                                   'send_self': False,
+                                   'name': 'Project Work Noted',
+                                   'recipient_fields': "assigned_to,work_notes_list",
+                                   'collection': 'u_project',
+                                   'condition': 'work_notesVALCHANGES^EQ',
+                                   'subject': "Project ${{number}} -- work notes added",
+                                   'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                      <div>Click here to view Project: ${{URI_REF}}</div>
+                                                      <div><hr/></div>
+                                                      <div>Priority: ${{priority}}</div>
+                                                      <div>Work Notes:</div>
+                                                      <div>${{work_notes}}</div>
+                                                      <div>&nbsp;</div>"""
+                                })
+        success, log = self.verify_post_data(url, post_data)
+        
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create email notification record for when Project task work noted
+        post_data = json.dumps({
+                                    'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'send_self': False,
+                                    'name': 'Project Task Work Noted',
+                                    'recipient_fields': "assigned_to,work_notes_list",
+                                    'collection': 'u_project_task',
+                                    'condition': 'work_notesVALCHANGES^EQ',
+                                    'subject': "Project Task ${{number}} -- work notes added",
+                                    'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                      <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                                      <div><hr/></div>
+                                                      <div>Priority: ${{priority}}</div>
+                                                      <div>Work Notes:</div>
+                                                      <div>${{work_notes}}</div>
+                                                      <div>&nbsp;</div>"""
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create email notification record for when Project closed
+        post_data = json.dumps({
+                                    'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'send_self': False,
+                                    'name': "Project Closed",
+                                    'recipient_fields': "opened_by,watch_list,parent.assigned_to",
+                                    'collection': 'u_project',
+                                    'condition': 'activeCHANGESTOfalse^EQ',
+                                    'subject': "Project ${{number}} has been closed",
+                                    'message_html': """<div>Your {} ${{number}} has been closed.""" \
+                                                    """Please contact the service desk if you have any questions.</div>
+                                                    <div>Closed by: ${{closed_by}}</div>
+                                                    <div>&nbsp;</div>
+                                                    <div>Short description: ${{short_description}}</div>
+                                                    <div>Click here to view: ${{URI_REF}}</div>
+                                                    <div><hr/></div>
+                                                    <div>Comments:</div>
+                                                    <div>${{comments}}</div>
+                                                    <div>&nbsp;</div>"""
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        #Create email notification record for when Project Task closed
+        post_data = json.dumps({
+                                   'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                   'action_update': True,
+                                   'send_self': False,
+                                   'name': "Project Task Closed",
+                                   'recipient_fields': "opened_by,watch_list,parent.assigned_to",
+                                   'collection': 'u_project_task',
+                                   'condition': 'activeCHANGESTOfalse^EQ',
+                                   'subject': "Project Task ${{number}} has been closed",
+                                   'message_html': """<div>Your Project Task${{number}} has been closed.""" \
+                                                   """Please contact the service desk if you have any questions.</div>
+                                                   <div>Closed by: ${{closed_by}}</div>
+                                                   <div>&nbsp;</div>
+                                                   <div>Short description: ${{short_description}}</div>
+                                                   <div>Click here to view: ${{URI_REF}}</div>
+                                                   <div><hr/></div>
+                                                   <div>Comments:</div>
+                                                   <div>${{comments}}</div>
+                                                   <div>&nbsp;</div>"""
+                                })           
+        success, log = self.verify_post_data(url, post_data)
+       
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create email notification record for when project assigned to my group
+        post_data = json.dumps({
+                                   'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                   'action_insert': True,
+                                   'action_update': True,
+                                   'name': "Project assigned to my group",
+                                   'recipient_fields': 'assignment_group',
+                                   'collection': 'u_project',
+                                   'condition': 'assigned_toISEMPTY^assignment_groupVALCHANGES^EQ',
+                                   'subject': "Project ${{number}} has been assigned to group" \
+                                              "${{assignment_group}}",
+                                   'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                       <div>Click here to view Project: ${{URI_REF}}</div>
+                                                       <div><hr/></div>
+                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Comments:</div>
+                                                       <div>${{comments}}</div>
+                                                       <div>&nbsp;</div>"""
+                               })
+        success, log = self.verify_post_data(url, post_data)
+        
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create email notification record for when project task assigned to my group
+        post_data = json.dumps({
+                                   'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                   'action_insert': True,
+                                   'action_update': True,
+                                   'name': "Project Task assigned to my group",
+                                   'recipient_fields': 'assignment_group',
+                                   'collection': 'u_project_task',
+                                   'condition': 'assigned_toISEMPTY^assignment_groupVALCHANGES^EQ',
+                                   'subject': "Project Task ${{number}} has been assigned to group" \
+                                              "${{assignment_group}}",
+                                   'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                       <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                                       <div><hr/></div>
+                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Comments:</div>
+                                                       <div>${{comments}}</div>
+                                                       <div>&nbsp;</div>"""
+                               })
+        success, log = self.verify_post_data(url, post_data)
+       
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create email notification record for when Project assigned to me
+        post_data = json.dumps({
+                                    'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'action_insert': True,
+                                    'send_self': False,
+                                    'name': "Project assigned to me",
+                                    'recipient_fields': 'assigned_to',
+                                    'collection': 'u_project',
+                                    'condition': 'assigned_toVALCHANGES^assigned_toISNOTEMPTY^EQ',
+                                    'subject': "Project ${{number}} has been assigned to you",
+                                    'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                        <div>Click here to view Project: ${{URI_REF}}</div>
+                                                        <div><hr /></div>
+                                                        <div>Priority: ${{priority}}</div>
+                                                        <div>Comments:</div>
+                                                        <div>${{comments}}</div>
+                                                        <div>&nbsp;</div>"""
+                                })
+        success, log = self.verify_post_data(url, post_data)
+
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create email notification record for when Project Task assigned to me
+        post_data = json.dumps({
+                                    'sysevent_email_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'action_insert': True,
+                                    'send_self': False,
+                                    'name': "Project Task assigned to me",
+                                    'recipient_fields': 'assigned_to',
+                                    'collection': 'u_project_task',
+                                    'condition': 'assigned_toVALCHANGES^assigned_toISNOTEMPTY^EQ',
+                                    'subject': "Project Task ${{number}} has been assigned to you",
+                                    'message_html': """<div>Short Description: ${{short_description}}</div>
+                                                        <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                                        <div><hr /></div>
+                                                        <div>Priority: ${{priority}}</div>
+                                                        <div>Comments:</div>
+                                                        <div>${{comments}}</div>
+                                                        <div>&nbsp;</div>"""
+                                })
+        return self.verify_post_data(url, post_data)
+        
+    def create_business_rule_records(self):
+        # Create email notification record for when Project commented
+        url = "https://{}.service-now.com/api/now/table/sys_script".format(self.instance_prefix)
+        post_data = json.dumps({
+                                   'sys_script_action': 'INSERT_OR_UPDATE',
+                                   'action_update': True,
+                                   'abort_action': True,
+                                   'add_message': True,
+                                   'when': 'before',
+                                   'name': 'Preceding Task Enforcement',
+                                   'collection': 'u_project_task',
+                                   'filter_condition': 'stateVALCHANGES^u_preceding_task.active=true',
+                                   'message': """<p>There is a dependency entered on the completion of task ${{current.u_preceding_task}}</p>
+                                                <p>Until the preceding task is completed, work on the current task should not begin.</p>
+                                                """
+                                })
+        success, log = self.verify_post_data(url, post_data)
+        
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Set work start to current date when state moves to work in progress and start date is empty for project
+        post_data = json.dumps({
+                                    'sys_script_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'abort_action': True,
+                                    'add_message': True,
+                                    'when': 'before',
+                                    'name': 'Project - Set Work Start',
+                                    'collection': 'u_project',
+                                    'filter_condition': 'stateCHANGESTO2^EQ',
+                                    'template': 'work_start=javascript:gs.nowDateTime();^EQ'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+       
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Set work end to current date when state moves to closed complete for project
+        post_data = json.dumps({
+                                    'sys_script_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'when': 'before',
+                                    'name': 'Project - Set Work End',
+                                    'collection': 'u_project',
+                                    'filter_condition': 'activeCHANGESTOfalse^EQ',
+                                    'template': 'work_end=javascript:gs.nowDateTime();^EQ'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+       
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        #Set work start to current date when state moves to work in progress and start date is empty for project task.
+        post_data = json.dumps({
+                                    'sys_script_action': 'INSERT_OR_UPDATE',
+                                    'action_update': True,
+                                    'abort_action': True,
+                                    'add_message': True,
+                                    'when': 'before',
+                                    'name': 'Project - Set Work Start',
+                                    'collection': 'u_project_task',
+                                    'filter_condition': 'stateCHANGESTO2^EQ',
+                                    'template': 'work_start=javascript:gs.nowDateTime();^EQ'
+                                })
+        success, log = self.verify_post_data(url, post_data)
+       
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        #Set work end to current date when state moves to closed complete for project task
+        post_data = json.dumps({
+                                   'sys_script_action': 'INSERT_OR_UPDATE',
+                                   'action_update': True,
+                                   'when': 'before',
+                                   'name': 'Project - Set Work End',
+                                   'collection': 'u_project_task',
+                                   'filter_condition': 'activeCHANGESTOfalse^EQ',
+                                   'template': 'work_end=javascript:gs.nowDateTime();^EQ'
+                                })
+        return self.verify_post_data(url, post_data)

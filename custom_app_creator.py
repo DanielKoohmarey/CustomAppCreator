@@ -89,6 +89,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create the custom table
         success, log = self.web_driver.create_table(self.auth_pair[0], 
                                                    self.auth_pair[1], 
@@ -98,6 +99,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         time.sleep(2) # Ensure the table has been created
         # Save the created applications sys_id field    
         url = "https://{}.service-now.com/api/now/table/sys_app_application?" \
@@ -124,6 +126,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Update the new application to require the new role
         url = "https://{}.service-now.com/api/now/table/sys_app_application/{}".format(
                 self.instance_prefix, self.state_variables['app_sys_id'])
@@ -161,6 +164,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Assign custom role to group
         url = "https://{}.service-now.com/api/now/table/sys_group_has_role".format(self.instance_prefix) 
         post_data = json.dumps({
@@ -249,6 +253,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create email notification record for when custom app closed      
         post_data = json.dumps({
                                     'sysevent_email_action': 'INSERT_OR_UPDATE',
@@ -276,6 +281,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create email notification record for when custom app assigned to my group
         post_data = json.dumps({
                                     'sysevent_email_action': 'INSERT_OR_UPDATE',
@@ -302,6 +308,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create email notification record for when custom app assigned to me
         post_data = json.dumps({
                                     'sysevent_email_action': 'INSERT_OR_UPDATE',
@@ -327,6 +334,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create email notification record for when custom app opened for me
         post_data = json.dumps({
                                     'sysevent_email_action': 'INSERT_OR_UPDATE',
@@ -364,7 +372,8 @@ class CustomAppCreator(AppCreator):
             return plus_sys_id, log
         else:
             self.state_variables['plus_sys_id'] = plus_sys_id
-            self.log(log)  
+            self.log(log)
+
         # Create custom app inbound email action record 
         url = "https://{}.service-now.com/api/now/table/sysevent_in_email_action".format(self.instance_prefix)
         post_data = json.dumps({
@@ -383,6 +392,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create custom app from Forward record
         post_data = json.dumps({
                                     'name': "Create {} Record (Forwarded)".format(self.app_name),
@@ -401,7 +411,8 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
-         # Create custom app from Reply record       
+
+        # Create custom app from Reply record       
         post_data = json.dumps({
                                     'name': "Update {} Record (Reply)".format(self.app_name),
                                     'type': 'reply',
@@ -428,6 +439,7 @@ class CustomAppCreator(AppCreator):
         else:
             self.state_variables['page_sys_id'] = page_sys_id
             self.log(log)
+
         # Create 'Overview' model
         url = "https://{}.service-now.com/api/now/table/sys_app_module".format(self.instance_prefix)
         post_data = json.dumps({
@@ -444,6 +456,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create 'Create New' module
         post_data = json.dumps({
                                     'title': "Create New",
@@ -459,6 +472,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create 'Open' module
         post_data = json.dumps({
                                     'title': 'Open',
@@ -475,6 +489,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create 'Open - Unassigned' module
         post_data = json.dumps({
                                     'title': "Open - Unassigned",
@@ -491,6 +506,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create 'Assigned to me' module
         post_data = json.dumps({
                                     'title': "Assigned to me",
@@ -507,6 +523,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create 'Closed' module
         post_data = json.dumps({
                                     'title': 'Closed',
@@ -523,6 +540,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create 'All' module
         post_data = json.dumps({
                                     'title': 'All',
@@ -549,6 +567,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create Open Custom App Records by Assignment report
         post_data = json.dumps({
                                     'title': "Open {} Records by Assignment".format(self.app_name),
@@ -563,6 +582,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create Open Custom app Records by Priority report
         post_data = json.dumps({
                                     'title': "Opened {} this month by Priority".format(self.app_name),
@@ -578,6 +598,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create Open Custom app Records by State report
         post_data = json.dumps({ 
                                     'title': 'Open {} Records by State'.format(self.app_name),
@@ -592,6 +613,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
        # Create Open Custom app Records by Escalation report        
         post_data = json.dumps({ 
                                     'title':'Open {} Records by Escalation'.format(self.app_name),
@@ -635,6 +657,7 @@ class CustomAppCreator(AppCreator):
         else:
             self.state_variables['p1_sla_sys_id'] = p1_sla_sys_id
             self.log(log)
+
         # Create sysrule_escalate for Custom App Priority 2 and save the sla sys_id               
         post_data = json.dumps({
                                     'name': "{} Priority 2".format(self.app_name),
@@ -651,6 +674,7 @@ class CustomAppCreator(AppCreator):
         else:
             self.state_variables['p2_sla_sys_id'] = p2_sla_sys_id
             self.log(log)
+
         # Create sysrule_escalate for Custom App Priority 3 and save the sla sys_id
         post_data = json.dumps({
                                     'name': "{} Priority 3".format(self.app_name),
@@ -667,6 +691,7 @@ class CustomAppCreator(AppCreator):
         else:
             self.state_variables['p3_sla_sys_id'] = p3_sla_sys_id
             self.log(log)
+
         # Create sysrule_escalate for Custom App Priority 4 and save the sla sys_id        
         post_data = json.dumps({
                                     'name': "{} Priority 4".format(self.app_name),
@@ -696,6 +721,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 1 High Escalation          
         post_data = json.dumps({
                                     'escalation': self.state_variables['p1_sla_sys_id'],
@@ -708,6 +734,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 1 Overdue Escalation 
         post_data = json.dumps({
                                     'escalation': self.state_variables['p1_sla_sys_id'],
@@ -720,6 +747,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 2 Moderate Escalation        
         post_data = json.dumps({
                                     'escalation': self.state_variables['p2_sla_sys_id'],
@@ -732,6 +760,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 2 High Escalation
         post_data = json.dumps({
                                     'escalation': self.state_variables['p2_sla_sys_id'],
@@ -744,6 +773,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 2 Overdue Escalation 
         post_data = json.dumps({
                                     'escalation': self.state_variables['p2_sla_sys_id'],
@@ -756,6 +786,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
          # Create sysrule_escalate_interval for Custom App Priority 3 Moderate Escalation       
         post_data = json.dumps({
                                     'escalation': self.state_variables['p3_sla_sys_id'],
@@ -768,6 +799,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 3 High Escalation        
         post_data = json.dumps({
                                     'escalation': self.state_variables['p3_sla_sys_id'],
@@ -780,6 +812,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 3 Overdue Escalation           
         post_data = json.dumps({
                                     'escalation': self.state_variables['p3_sla_sys_id'],
@@ -792,6 +825,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 4 Moderate Escalation        
         post_data = json.dumps({
                                     'escalation': self.state_variables['p4_sla_sys_id'],
@@ -804,6 +838,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 4 High Escalation
         post_data = json.dumps({
                                     'escalation': self.state_variables['p4_sla_sys_id'],
@@ -816,6 +851,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create sysrule_escalate_interval for Custom App Priority 4 Overdue Escalation            
         post_data = json.dumps({
                                     'escalation': self.state_variables['p4_sla_sys_id'],
@@ -859,8 +895,8 @@ class CustomAppCreator(AppCreator):
             self.state_variables['record_producer_sys_id'] = record_producer_sys_id
             self.log(log)
 
+        # Create short description variable            
         url = "https://{}.service-now.com/api/now/table/item_option_new".format(self.instance_prefix)
-        # Create short description variable
         post_data = json.dumps({
                                     'map_to_field': True,
                                     'field': 'short_description',
@@ -875,7 +911,8 @@ class CustomAppCreator(AppCreator):
         if not success:
             return success, log
         else:
-            self.log(log)           
+            self.log(log)
+            
         # Create description variable
         post_data = json.dumps({
                                     'map_to_field': True,
@@ -922,6 +959,7 @@ class CustomAppCreator(AppCreator):
             return success, log
         else:
             self.log(log)
+
         # Create description variable
         post_data = json.dumps({
                                     'map_to_field': True,

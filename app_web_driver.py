@@ -12,27 +12,25 @@ Dependencies:
     sudo apt-get install firefox
     
 Notes:
-If firefox version > 46:    
-   wget https://github.com/mozilla/geckodriver/releases/download/v0.11.1/geckodriver-v0.11.1-linux64.tar.gz
-   tar -zxvf geckodriver-v0.11.1-linux64.tar.gz
-   sudo mv geckodriver /usr/bin
+If firefox version > 46: (marionette does not support right click on element)
+    wget https://github.com/mozilla/geckodriver/releases/download/v0.11.1/geckodriver-v0.11.1-linux64.tar.gz
+    tar -zxvf geckodriver-v0.11.1-linux64.tar.gz
+    sudo mv geckodriver /usr/bin
 Or:
-    sudo apt-get purge firefox
-    sudo add-apt-repository ppa:ubuntu-mozilla-daily/ppa
-    apt-cache show firefox | grep Version
-    sudo apt-get install firefox=45.0.2+build1-0ubuntu1
-    sudo apt-mark hold firefox
+    Download firefox binary of version you want
+    wget https://ftp.mozilla.org/pub/firefox/releases/44.0/linux-x86_64/en-US/firefox-44.0.tar.bz2
+    tar -xjvf firefox-44.0.tar.bz2
+    Point to the Binary when creating the driver
     
-    To upgrade:
-    
-    sudo apt-mark unhold firefox
-    sudo apt-get upgrade
+
 killall -e firefox to when testing to ensure clean up
 """
 import time
 import traceback
 
 from selenium import webdriver
+#from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+#from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -43,8 +41,12 @@ from pyvirtualdisplay import Display
 class AppWebDriver(object):
     def __init__(self, prefix):
         self.instance_prefix = prefix
-        #self.display = Display(visible=0, size=(1280, 960))
-        #self.display.start()        
+        self.display = Display(visible=0, size=(1280, 960))
+        self.display.start()
+        #binary = FirefoxBinary('firefox/firefox')
+        #firefox = DesiredCapabilities.FIREFOX
+        #firefox['marionette'] = False
+        #self.driver = webdriver.Firefox(firefox_binary=binary, capabilities = firefox)          
         self.driver = webdriver.Firefox()
         self.driver.maximize_window()
 
@@ -55,7 +57,7 @@ class AppWebDriver(object):
             self.driver.quit()
         except:
             print "Failed to quit webdriver."
-        #self.display.stop()
+        self.display.stop()
 
     def login(self, user, pwd):
         success = True

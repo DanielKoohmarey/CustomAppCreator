@@ -12,7 +12,6 @@ Dependencies:
 """
 import pickle
 import requests
-import json
 import time
 import app_web_driver
 
@@ -61,6 +60,7 @@ class AppCreator(object):
         else:
             response = requests.get(url, auth=self.auth_pair, 
                                     headers=self.json_headers)
+        json_response = {}
         try:
             if response.status_code == 200:
                 json_response = response.json()['result'][0]
@@ -68,7 +68,6 @@ class AppCreator(object):
                 json_response = response.json()['result']
             else:
                 log = "Unsuccessful response code from {}: {}.".format(path, response.status_code)
-                json_response = {}
         except:
             log = "Error parsing result field in json response from {}".format(path)
     
@@ -87,6 +86,8 @@ class AppCreator(object):
         if response.status_code == 201:
             success = True
             log = "POST {} response had status code 201.".format(path)
+        else:
+            log = "POST {} response had status code {}, expected 201.".format(path, response.status_code)
             
         return success, log
         
