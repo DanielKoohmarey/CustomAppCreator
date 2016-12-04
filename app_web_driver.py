@@ -76,7 +76,7 @@ class AppWebDriver(object):
         
         return success, log
         
-    def create_table(self, table_name, app_prefix, app_name = '', new_module = True):
+    def create_table(self, table_name, app_prefix, app_name = '', new_module = False):
         success = True
         log = "Custom table created successfully."
         try:
@@ -84,28 +84,30 @@ class AppWebDriver(object):
             self.driver.get("https://{}.service-now.com/nav_to.do?uri=%2Ftable_columns.do".format(self.instance_prefix))
             self.driver.switch_to.frame(self.driver.find_element_by_tag_name('iframe'))
             # Fill in table name
-            table_name_input = self.driver.find_element_by_name("sysparm_tablelabel")
+            table_name_present = expected_conditions.presence_of_element_located((By.ID, 'sysparm_tablelabel'))
+            WebDriverWait(self.driver, 5).until(table_name_present, "Could not find table name input.")
+            table_name_input = self.driver.find_element_by_id("sysparm_tablelabel")
             table_name_input.send_keys(table_name)
             # Select extends table
             extends_dropdown = self.driver.find_element_by_xpath("//select[@id='sysparm_extends']/option[@value='task']")
             extends_dropdown.click()
             # Enter table number prefix
             number_prefix_present = expected_conditions.presence_of_element_located((By.ID, 'sysparm_number_prefix'))
-            WebDriverWait(self.driver, 10).until(number_prefix_present)
+            WebDriverWait(self.driver, 10).until(number_prefix_present, "Could not find number prefix input.")
             number_prefix_input = self.driver.find_element_by_id('sysparm_number_prefix')            
             number_prefix_input.send_keys(app_prefix)
             if app_name:
                 # Fill in app name field
-                app_name_input = self.driver.find_element_by_name('sysparm_app_name')
+                app_name_input = self.driver.find_element_by_id('sysparm_app_name')
                 app_name_input.clear()
-                app_name_input.send_keys()
+                app_name_input.send_keys(app_name)
             else:
                 # Uncheck new app checkbox
-                new_app_checkbox = self.driver.find_element_by_name('sysparm_new_application')
+                new_app_checkbox = self.driver.find_element_by_id('sysparm_new_application')
                 new_app_checkbox.click()
             if not new_module:
                 # Uncheck new module checkbox
-                new_module_checkbox = self.driver.find_element_by_name('sysparm_new_module')                
+                new_module_checkbox = self.driver.find_element_by_id('sysparm_new_module')                
                 new_module_checkbox.click()
             create_button = self.driver.find_element_by_name('create')
             create_button.click()
@@ -113,6 +115,7 @@ class AppWebDriver(object):
             WebDriverWait(self.driver, 10).until(expected_conditions.alert_is_present(), "Timed out waiting for create dialogue.")
             alert = self.driver.switch_to_alert()
             alert.accept()
+            #TODO: Check if app prefix conflict warning exists?
         except Exception, e:
             success = False
             log = traceback.format_exc(e)
@@ -127,9 +130,14 @@ class AppWebDriver(object):
             # Open add content popup
             add_content_button = self.driver.find_element_by_xpath("//button[text()='Add content']")
             add_content_button.click()
+            content_present = expected_conditions.presence_of_element_located((By.CLASS_NAME, 'home_select_content'))
+            WebDriverWait(self.driver, 5).until(content_present)
             renderers_select = Select(self.driver.find_elements_by_class_name('home_select_content')[0])
             renderers_select.select_by_visible_text('Reports')
-            time.sleep(10) # wait for reports column to populate
+            # Wait for Reports options to populate 
+            time.sleep(60)            
+            content_present = expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "option[value='{}']".format(app_name)))
+            WebDriverWait(self.driver, 10).until(content_present, "Could not find {} in Reports options.".format(app_name))            
             report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
             report_select.select_by_visible_text(app_name)
             # Add available content to grid
@@ -239,7 +247,7 @@ class AppWebDriver(object):
                 # Create new section
                 section_select.select_by_visible_text('New...')
                 section_prompt_present = expected_conditions.presence_of_element_located((By.ID, 'glide_prompt_answer'))
-                WebDriverWait(self.driver, 5).until(section_prompt_present)                
+                WebDriverWait(self.driver, 5).until(section_prompt_present, "Could not find new section prompt.")                
                 section_caption_input = self.driver.find_element_by_id('glide_prompt_answer')
                 section_caption_input.send_keys(section_name)
                 section_ok_button = self.driver.find_element_by_id('ok_button')

@@ -24,9 +24,6 @@ Dependencies:
 """
 import json
 import requests
-import sys
-import os
-import time
 
 from app_creator import AppCreator
 
@@ -90,9 +87,7 @@ class PMAppCreator(AppCreator):
             self.log(log)
             
         # Create the 'Project' table
-        success, log = self.web_driver.create_custom_table(self.auth_pair[0], 
-                                                   self.auth_pair[1], 
-                                                   'Project',
+        success, log = self.web_driver.create_table('Project',
                                                    'PRJ',
                                                    'Project Management')
                                                    
@@ -110,17 +105,13 @@ class PMAppCreator(AppCreator):
         if not app_sys_id:
             return app_sys_id, log
         else:
-            self.state_variables['app_sys_id'] = app_sys_id
+            self.state_variables['app_sys_id'] = app_sys_id #'4cd3f7d3373a6200d98ae013b3990e52' dkoohsc5 testing
             self.log(log)   
             
         # Create the 'Project Task' table
-        return self.web_driver.create_custom_table(self.auth_pair[0], 
-                                                   self.auth_pair[1], 
-                                                   self.app_name,
-                                                   'Project Task',
-                                                   'PRJTASK',
-                                                   '',
-                                                   False)                                                   
+        return self.web_driver.create_table('Project Task',
+                                           'PRJTASK',
+                                           '')                                                   
                 
     def configure_project_form_layouts(self):
         # Configure 'Project' form layout        
@@ -220,7 +211,9 @@ class PMAppCreator(AppCreator):
         # Update the new application to require the new role
         url = "https://{}.service-now.com/api/now/table/sys_app_application/{}".format(self.instance_prefix,
                                                                                         self.state_variables['app_sys_id'])
-        put_data = "{{'roles':'project_manager,itil'}}"
+        put_data = json.dumps({
+                                    'roles': 'project_manager,itil'        
+                                })
         return self.verify_put_data(url, put_data)
                 
     def setup_project_group_roles(self):

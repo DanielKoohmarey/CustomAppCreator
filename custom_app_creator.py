@@ -91,10 +91,9 @@ class CustomAppCreator(AppCreator):
             self.log(log)
 
         # Create the custom table
-        success, log = self.web_driver.create_table(self.auth_pair[0], 
-                                                   self.auth_pair[1], 
-                                                   self.app_name,
-                                                   self.app_prefix)
+        success, log = self.web_driver.create_table(self.app_name,
+                                                    self.app_prefix,
+                                                   self.app_name)
         if not success:
             return success, log
         else:
@@ -130,13 +129,16 @@ class CustomAppCreator(AppCreator):
         # Update the new application to require the new role
         url = "https://{}.service-now.com/api/now/table/sys_app_application/{}".format(
                 self.instance_prefix, self.state_variables['app_sys_id'])
-        put_data = "{{'roles':'{}'}}".format(self.app_name)   
+        #put_data = "{{'roles':'{}'}}".format(self.app_name)   
+        put_data = json.dumps({
+                                    'roles': self.app_name        
+                                })        
         return self.verify_put_data(url, put_data)                              
 
     def set_role_permissions(self):
         # Get table dictionary record sys id
         url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query="\
-                "name%3D.{}.%5Einternal_type%3Dcollection&sysparm_limit=1".format(self.instance_prefix, self.table_name)
+                "name%3D{}%5Einternal_type%3Dcollection&sysparm_limit=1".format(self.instance_prefix, self.table_name)
         role_sys_id, log = self.get_json_response_key('sys_id', url)
 
         if not role_sys_id:
@@ -147,7 +149,10 @@ class CustomAppCreator(AppCreator):
         
         url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(self.instance_prefix,
                                                                                     self.state_variables['role_sys_id'])
-        put_data = "{{'delete_roles':'{}'}}".format(self.app_name)
+        #put_data = "{{'delete_roles':'{}'}}".format(self.app_name)
+        put_data = json.dumps({
+                                    'delete_roles': self.app_name        
+                                })
         return self.verify_put_data(url, put_data)
 
     def set_custom_group_role(self):
@@ -980,11 +985,10 @@ if __name__ == '__main__':
     """
     instance_prefix = 'dkoohsc5' 
     user = 'admin'
-    pwd = 'admin' #'Ref6yht7'
+    pwd = 'admin'
     auth_pair = user,pwd
-    app_name = 'newTable1'
-    table_name = 'u_'+ app_name
-    app_prefix = 'new1'
+    app_name = 'newApp30'
+    app_prefix = 'app30'
     state_data = {}
 
     if len(sys.argv) > 6:

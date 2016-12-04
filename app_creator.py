@@ -85,7 +85,7 @@ class AppCreator(object):
         response = requests.post(url, auth=self.auth_pair, headers=self.json_headers, data=post_data)
         if response.status_code == 201:
             success = True
-            log = "POST {} response had status code 201.".format(path)
+            log = "POST {} response had status code 201 (expected).".format(path)
         else:
             log = "POST {} response had status code {}, expected 201.".format(path, response.status_code)
             
@@ -100,6 +100,8 @@ class AppCreator(object):
         if response.status_code == 200:
             success = True
             log = "PUT {} response had status code 200.".format(path)
+        else:
+            log = "PUT {} response had status code {}, expected 200.".format(response.status_code, path)
             
         return success, log
             
@@ -149,7 +151,7 @@ class AppCreator(object):
         backup_state = open('{}_backup_state.pkl'.format(self.instance_prefix), 'wb')
         pickle.dump(self.state_variables, backup_state)
         backup_state.close()
-        self.log("State variables saved in backup_state.pkl.", False)
+        self.log("State variables saved in {}_backup_state.pkl.".format(self.instance_prefix), False)
         
     def get_html_results(self):
         td_style = 'padding:10px;text-align:left;border: 1px solid #ddd;'
