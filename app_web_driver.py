@@ -36,49 +36,51 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import Select
+from selenium.common.exceptions import TimeoutException
 from pyvirtualdisplay import Display
 
 class AppWebDriver(object):
-    def __init__(self, prefix):
+    def __init__(self, prefix, auth):
         self.instance_prefix = prefix
+        self.auth_pair = auth
         self.display = Display(visible=0, size=(1280, 960))
         self.display.start()
-        #binary = FirefoxBinary('firefox/firefox')
+        #binary = FirefoxBinary('/home/ubuntu/firefox/firefox')
         #firefox = DesiredCapabilities.FIREFOX
         #firefox['marionette'] = False
         #self.driver = webdriver.Firefox(firefox_binary=binary, capabilities = firefox)          
         self.driver = webdriver.Firefox()
         self.driver.maximize_window()
+        self.logged_in = False        
+        self.login()
+
+    def login(self):
+        try:        
+            login_url = "https://{}.service-now.com/login.do".format(self.instance_prefix)
+            self.driver.get(login_url)
+            user_input = self.driver.find_element_by_name('user_name')
+            user_input.send_keys(self.auth_pair[0])
+            pass_input = self.driver.find_element_by_name('user_password')
+            pass_input.send_keys(self.auth_pair[1])
+            submit_button = self.driver.find_element_by_name('not_important')
+            submit_button.click()
+            time.sleep(5)
+            if self.driver.current_url != login_url:
+                self.logged_in = True
+        except:
+            print "Failed to login to {}".format(self.instance_prefix)
 
     def end_session(self):
         self.driver.get("https://{}.service-now.com/logout.do".format(self.instance_prefix))
-        self.driver.delete_all_cookies()
         try:
             self.driver.quit()
         except:
             print "Failed to quit webdriver."
         self.display.stop()
-
-    def login(self, user, pwd):
-        success = True
-        log = "Logged in successfully."
-        try:        
-            self.driver.get("https://{}.service-now.com/login.do".format(self.instance_prefix))
-            user_input = self.driver.find_element_by_name('user_name')
-            user_input.send_keys(user)
-            pass_input = self.driver.find_element_by_name('user_password')
-            pass_input.send_keys(pwd)
-            submit_button = self.driver.find_element_by_name('not_important')
-            submit_button.click()        
-        except Exception, e:
-            success = False
-            log = traceback.format_exc(e)
-        
-        return success, log
         
     def create_table(self, table_name, app_prefix, app_name = '', new_module = False):
         success = True
-        log = "Custom table created successfully."
+        log = "{} table created successfully.".format(table_name)
         try:
             # Create custom table
             self.driver.get("https://{}.service-now.com/nav_to.do?uri=%2Ftable_columns.do".format(self.instance_prefix))
@@ -115,7 +117,7 @@ class AppWebDriver(object):
             WebDriverWait(self.driver, 10).until(expected_conditions.alert_is_present(), "Timed out waiting for create dialogue.")
             alert = self.driver.switch_to_alert()
             alert.accept()
-            #TODO: Check if app prefix conflict warning exists?
+            time.sleep(2) # wait for the table to be created for subsequent REST calls
         except Exception, e:
             success = False
             log = traceback.format_exc(e)
@@ -202,11 +204,11 @@ class AppWebDriver(object):
                     available_select.deselect_all()
                     first_option.click()
                     add_available_button.click()
-                    available_select.deselect_by_visible_text(add_to_selected)                    
+                    available_select.deselect_all()                  
                 elif add_to_selected in available_options:
                     available_select.select_by_visible_text(add_to_selected)
                     add_available_button.click()
-                    available_select.deselect_by_visible_text(add_to_selected)
+                    available_select.deselect_all()
                 else:
                     # Create new field
                     if add_to_selected not in new_fields:
@@ -228,10 +230,12 @@ class AppWebDriver(object):
             save_button = self.driver.find_element_by_id('sysverb_save')
             save_button.click()
             
-            time.sleep(5)
             # Wait for save dialogue to complete
-            #menu_page = expected_conditions.presence_of_element_located((By.ID, 'sysparm_button_close'))
-            #WebDriverWait(self.driver, 10).until(menu_page)
+            try:
+                close_save_button_exists = expected_conditions.presence_of_element_located((By.ID, 'sysparm_button_close'))
+                WebDriverWait(self.driver, 10).until(close_save_button_exists)
+            except TimeoutException:
+                pass
             
     def configure_form_layout(self, table_name, section_name, configuration, new_fields):
         success = True
@@ -273,7 +277,7 @@ class AppWebDriver(object):
             for add_to_selected in configuration:
                 available_select.select_by_visible_text(add_to_selected)
                 add_available_button.click()
-                available_select.deselect_by_visible_text(add_to_selected)
+                available_select.deselect_all()
             save_button = self.driver.find_element_by_id('sysverb_save')
             save_button.click()
         except Exception, e:
@@ -358,8 +362,9 @@ if __name__ == '__main__':
     instance_prefix = 'dkoohsc5'
     app_prefix = ''
     app_name = ''    
-    app = AppWebDriver(instance_prefix)
-    app.login(user, pwd)
-    #app.create_custom_table(app_name, app_prefix)
-    #app.add_reports(app_name, 4)
+    app = AppWebDriver(instance_prefix, (user, pwd))
+    print "Web driver started successfully"
+    if app.logged_in:
+        print "Logged in successfully"
     app.end_session()
+    print "Ended session successfully"

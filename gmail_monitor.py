@@ -18,11 +18,11 @@ import gmail_wrapper
 import traceback
 
 from custom_app_creator import CustomAppCreator
+from pm_app_creator import PMAppCreator
 
 def main():
     wrapper = gmail_wrapper.GmailWrapper()    
-    current_day = datetime.date.today().day    
-    
+  
     while True:
         # Get an unread (unprocessed) automation request
         unread_msg_id = wrapper.get_unread_message_id()
@@ -51,6 +51,11 @@ def main():
                                                 run_variables['Password'],
                                                 run_variables['App Name'],
                                                 run_variables['App Prefix'])
+                                                
+            elif run_variables['Type'] == 'Project Management App':
+                app_creator = PMAppCreator(run_variables['Instance Prefix'],
+                                           run_variables['User'],
+                                            run_variables['Password'])
             
             if not app_creator:
                 wrapper.mark_as_read(unread_msg_id)
@@ -65,7 +70,7 @@ def main():
                 success = 'SUCCEEDED'
             subject = "{} creation: {}".format(app_creator.app_name, success)        
             
-            html = "<h2>{} {} Automation Report</h2>".format(run_variables['Type'], app_creator.app_name)
+            html = "<h2>{} {} Automation Report</h2>".format(app_creator.instance_prefix, run_variables['Type'])
             html += app_creator.get_html_results()
             html += "<h4> Automation request received at {}</h4>".format(msg_data['date'])
             plain = "\r\n".join(['{}. {}'.format(step, desc) for step, desc in app_creator.logged])
@@ -78,18 +83,6 @@ def main():
         else:
             print "{} Sleeping 5min before checking email... ".format(datetime.datetime.now())
             time.sleep(300) # check mail every 5 min
-        """    
-        current_date = datetime.date.today()
-        if current_day != current_date.day:
-            current_day = current_date.day
-            date_string = '{}-{}-{}'.format(current_date.month,
-                                            current_date.day,
-                                            current_date.year)
-            heartbeat_msg = wrapper.create_message('Gmail Monitor Still Running',
-                                       "{} Script Heartbeat.".format(date_string),
-                                       "{} Script Heartbeat.".format(date_string))
-            wrapper.send_message(heartbeat_msg)
-        """
 
 
 if __name__ == '__main__':

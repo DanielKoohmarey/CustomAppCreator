@@ -37,33 +37,34 @@ class PMAppCreator(AppCreator):
         AppCreator.__init__(self, instance_prefix, auth_pair, {}, prev_state)
         
         self.state_map = {
-                            1: (self.check_for_project_tables,
-                                    "Check if the project app table already exists."),
-                            2: (self.create_project_tables,
+                            1: (self.check_login_credentials,
+                                    "Check if the login credentials are valid."),        
+                            2: (self.check_for_project_tables,
+                                    "Check if the 'Project' & 'Project Task' tables already exists."),
+                            3: (self.create_project_tables,
                                     "Create 'Project' & 'Project Task' tables."),
-                            3: (self.configure_project_form_layouts,
+                            4: (self.configure_project_form_layouts,
                                     "Configure 'Project' form layouts."),
-                            4: (self.configure_related_lists,
+                            5: (self.configure_related_lists,
                                     "Configure 'Project' related lists."),
-                            5: (self.configure_label_choices,
+                            6: (self.configure_label_choices,
                                     "Configure 'Portfolio' & 'Project Size' label choices."),
-                            6: (self.configure_project_task_form_layout,
+                            7: (self.configure_project_task_form_layout,
                                     "Configure 'Project Task' form layout."),
-                            7: (self.configure_list_layout,
+                            8: (self.configure_list_layout,
                                     "Configure 'Project List' & 'Project Task List' list layout."),
-                            8: (self.setup_project_app_roles,
+                            9: (self.setup_project_app_roles,
                                     "Create project app role and apply to 'Project'."),
-                            9: (self.setup_project_group_roles,
+                            10: (self.setup_project_group_roles,
                                     "Create 'Project Manager' group roles."),
-                            10: (self.create_reports,
+                            11: (self.create_reports,
                                     "Create various project reports."),
-                            11: (self.create_modules,
+                            12: (self.create_modules,
                                     "Create project modules."),
-                            12: (self.create_email_notification_records,
+                            13: (self.create_email_notification_records,
                                     "Create email notifications."),
-                            13: (self.create_business_rule_records,
+                            14: (self.create_business_rule_records,
                                     "Create business rules.")
-                                     
                          }      
                 
     def check_for_project_tables(self):
@@ -78,14 +79,6 @@ class PMAppCreator(AppCreator):
         return self.check_for_table('Project Task')
 
     def create_project_tables(self):
-        # Log in
-        success, log = self.web_driver.login(self.auth_pair[0], self.auth_pair[1])
-        
-        if not success:
-            return success, log
-        else:
-            self.log(log)
-            
         # Create the 'Project' table
         success, log = self.web_driver.create_table('Project',
                                                    'PRJ',
@@ -105,7 +98,7 @@ class PMAppCreator(AppCreator):
         if not app_sys_id:
             return app_sys_id, log
         else:
-            self.state_variables['app_sys_id'] = app_sys_id #'4cd3f7d3373a6200d98ae013b3990e52' dkoohsc5 testing
+            self.state_variables['app_sys_id'] = app_sys_id
             self.log(log)   
             
         # Create the 'Project Task' table
@@ -190,8 +183,8 @@ class PMAppCreator(AppCreator):
         return success, log      
         
     def get_project_taskboard_url(self):
-        # Retrieves the taskboard url and stores it in self.state['task_board_url']
-        return self.web_driver.get_visual_task_board_url('u_project_list', self.state)
+        # Retrieves the taskboard url and stores it in self.state_variables['task_board_url']
+        return self.web_driver.get_visual_task_board_url('u_project_list', self.state_variables)
 
     def setup_project_app_roles(self):                   
         # Create the custom application role
@@ -254,10 +247,14 @@ class PMAppCreator(AppCreator):
             self.state_variables['project_sys_id'] = project_sys_id
             self.log(log)
 
-        #GET project dictionary record sys ID    
+        #Assign project roles
         url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(
                 self.instance_prefix, self.state_variables['project_sys_id'])
-        put_data = "{{'write_roles':'project_manager,itil','create_roles':'project_manager','delete_roles':'project_manager'}}"
+        put_data = json.dumps({
+                                    'write_roles': 'project_manager,itil',
+                                    'create_roles': 'project_manager',
+                                    'delete_roles': 'project_manager'
+                                })
         success, log = self.verify_put_data(url, put_data)
     
         if not success:
@@ -265,7 +262,7 @@ class PMAppCreator(AppCreator):
         else:
             self.log(log)    
     
-        #Assign project_manager role to project create/delete access itil to write
+        # Assign project_manager role to project create/delete access itil to write
         url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query="\
                 "name%3Du_project_task%5Einternal_type%3Dcollection&sysparm_limit=1{}".format(self.instance_prefix)
         project_task_sys_id, log = self.get_json_response_key('sys_id', url)
@@ -276,10 +273,14 @@ class PMAppCreator(AppCreator):
             self.state_variables['project_task_sys_id'] = project_task_sys_id
             self.log(log)          
     
-        #GET project task dictionary record sys ID    
+        # Assign project task roles  
         url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(
                     self.instance_prefix, self.state_variables['project_task_sys_id'])
-        put_data = "{{'write_roles':'project_manager,itil','create_roles':'project_manager,itil','delete_roles':'project_manager,itil'}}"
+        put_data = json.dumps({
+                                    'write_roles': 'project_manager,itil',
+                                    'create_roles': 'project_manager,itil',
+                                    'delete_roles': 'project_manager,itil'
+                                })
         return self.verify_put_data(url, put_data)
 
     def create_reports(self):

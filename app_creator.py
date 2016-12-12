@@ -28,7 +28,7 @@ class AppCreator(object):
         self.instance_prefix = instance_prefix 
         self.auth_pair = auth_pair
         self.run_variables = run_variables
-        self.web_driver = app_web_driver.AppWebDriver(instance_prefix)
+        self.web_driver = app_web_driver.AppWebDriver(instance_prefix, auth_pair)
         self.state_variables = prev_state
         if not self.state_variables:
             self.state_variables['state'] = 1
@@ -103,6 +103,13 @@ class AppCreator(object):
         else:
             log = "PUT {} response had status code {}, expected 200.".format(response.status_code, path)
             
+        return success, log
+            
+    def check_login_credentials(self):
+        success = self.web_driver.logged_in
+        log = "Logged in to {} successfully.".format(self.instance_prefix)
+        if not success:
+            log = "Failed to login to {}, invalid credentials.".format(self.instance_prefix)
         return success, log
             
     def check_for_table(self, table_name):

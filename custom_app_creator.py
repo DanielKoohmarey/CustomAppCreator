@@ -38,58 +38,52 @@ class CustomAppCreator(AppCreator):
                                 prev_state)
                                 
         self.state_map = {
-                            1: (self.check_for_custom_table,
-                                     "Check if the custom app table already exists."),
-                            2: (self.create_custom_table,
-                                     "Create the custom app table & retrieve the app sys id."),
-                            3: (self.setup_custom_app_role,
-                                     "Create custom app role and apply to app."),
-                            4: (self.set_role_permissions,
-                                     "Add delete role to custom role."),                                     
-                            5: (self.set_custom_group_role,
-                                     "Create the group record & assign custom role to group."),
-                            6: (self.create_live_feed_group,
-                                     "Create the live feed group."),
-                            7: (self.create_knowledge_base,
-                                     "Create the knowledge base & retrieve the knowledge sys id."),
-                            8: (self.create_user_criteria_record,
-                                     "Create a user criteria record & retrieve the criteria sys id."),
-                            9: (self.create_can_contribute_record,
+                            1: (self.check_login_credentials,
+                                    "Check if the login credentials are valid."),
+                            2: (self.check_for_custom_table,
+                                    "Check if the custom app table already exists."),
+                            3: (self.create_custom_table,
+                                    "Create the custom app table & retrieve the app sys id."),
+                            4: (self.setup_custom_app_role,
+                                    "Create custom app role and apply to app."),
+                            5: (self.set_role_permissions,
+                                    "Add delete role to custom role."),                                     
+                            6: (self.set_custom_group_role,
+                                    "Create the group record & assign custom role to group."),
+                            7: (self.create_live_feed_group,
+                                    "Create the live feed group."),
+                            8: (self.create_knowledge_base,
+                                    "Create the knowledge base & retrieve the knowledge sys id."),
+                            9: (self.create_user_criteria_record,
+                                    "Create a user criteria record & retrieve the criteria sys id."),
+                            10: (self.create_can_contribute_record,
                                      "Create a can contribute record."),
-                            10: (self.create_email_notification_records,
+                            11: (self.create_email_notification_records,
                                      "Create email notification records."),
-                            11: (self.create_inbound_email_actions,
+                            12: (self.create_inbound_email_actions,
                                      "Retrieve the plus sys id & create inbound email actions."),
-                            12: (self.create_modules,
+                            13: (self.create_modules,
                                      "Retrieve the page sys id & create modules."),
-                            13: (self.create_reports,
+                            14: (self.create_reports,
                                      "Create reports."),
-                            14: (self.add_reports,
+                            15: (self.add_reports,
                                      "Add reports to overview."),
-                            15: (self.create_assignment_rules,
+                            16: (self.create_assignment_rules,
                                      "Create assignment rules."),                                      
-                            16: (self.setup_slas,
+                            17: (self.setup_slas,
                                      "Create SLAs & save P1-P4 sla sys ids & create escalation rule."),
-                            17: (self.create_catalog_category,
+                            18: (self.create_catalog_category,
                                      "Create catalog category & save category sys id."),
-                            18: (self.create_record_producer,
+                            19: (self.create_record_producer,
                                      "Create record producer & save producer sys id."),
-                            19: (self.create_catalog_item,
+                            20: (self.create_catalog_item,
                                      "Create catalog item & save item sys id.")
-                        }  
+                        }                                           
                         
     def check_for_custom_table(self):                             
         return self.check_for_table(self.table_name)               
                              
     def create_custom_table(self):
-        # Log in
-        success, log = self.web_driver.login(self.auth_pair[0], self.auth_pair[1])
-        
-        if not success:
-            return success, log
-        else:
-            self.log(log)
-
         # Create the custom table
         success, log = self.web_driver.create_table(self.app_name,
                                                     self.app_prefix,
@@ -99,7 +93,6 @@ class CustomAppCreator(AppCreator):
         else:
             self.log(log)
 
-        time.sleep(2) # Ensure the table has been created
         # Save the created applications sys_id field    
         url = "https://{}.service-now.com/api/now/table/sys_app_application?" \
                 "sysparm_query=titleSTARTSWITH{}&sysparm_limit=1".format(
@@ -128,8 +121,7 @@ class CustomAppCreator(AppCreator):
 
         # Update the new application to require the new role
         url = "https://{}.service-now.com/api/now/table/sys_app_application/{}".format(
-                self.instance_prefix, self.state_variables['app_sys_id'])
-        #put_data = "{{'roles':'{}'}}".format(self.app_name)   
+                self.instance_prefix, self.state_variables['app_sys_id'])   
         put_data = json.dumps({
                                     'roles': self.app_name        
                                 })        
@@ -149,7 +141,6 @@ class CustomAppCreator(AppCreator):
         
         url = "https://{}.service-now.com/api/now/table/sys_dictionary/{}".format(self.instance_prefix,
                                                                                     self.state_variables['role_sys_id'])
-        #put_data = "{{'delete_roles':'{}'}}".format(self.app_name)
         put_data = json.dumps({
                                     'delete_roles': self.app_name        
                                 })
