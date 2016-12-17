@@ -15,7 +15,6 @@ import pickle
 import requests
 import sys
 import os
-import time
 
 from app_creator import AppCreator
 
@@ -622,7 +621,7 @@ class CustomAppCreator(AppCreator):
 
     def add_reports(self):
         # Add all created reports to overview page
-        return self.web_driver.add_reports(self.app_name, 4) # 4 reports expected
+        return self.web_driver.add_reports(self.app_name, [self.app_name], 4, 1) # 4 reports expected, skip the 1st one
         
     def create_assignment_rules(self):
         # Create default assignment for all records on new table, new group

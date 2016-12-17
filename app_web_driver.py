@@ -67,11 +67,12 @@ class AppWebDriver(object):
             time.sleep(5)
             if self.driver.current_url != login_url:
                 self.logged_in = True
-        except:
-            print "Failed to login to {}".format(self.instance_prefix)
+        except Exception, e:
+            print "Failed to login to {}\n{}".format(self.instance_prefix, e)
 
     def end_session(self):
         self.driver.get("https://{}.service-now.com/logout.do".format(self.instance_prefix))
+        self.driver.delete_all_cookies()
         try:
             self.driver.quit()
         except:
@@ -124,36 +125,37 @@ class AppWebDriver(object):
         
         return success, log
 
-    def add_reports(self, app_name, expected):
+    def add_reports(self, overview_name, report_options, expected, skip = 0):
         success = True
         log = "Added {} reports successfully.".format(expected)
         try:
-            self.driver.get("https://{}.service-now.com/home.do?sysparm_view={}_overview".format(self.instance_prefix, app_name))
+            self.driver.get("https://{}.service-now.com/home.do?sysparm_view={}_overview".format(self.instance_prefix, overview_name))
             # Open add content popup
             add_content_button = self.driver.find_element_by_xpath("//button[text()='Add content']")
             add_content_button.click()
-            content_present = expected_conditions.presence_of_element_located((By.CLASS_NAME, 'home_select_content'))
-            WebDriverWait(self.driver, 5).until(content_present)
+            reports_option_present = expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "option[value='Reports']"))
+            WebDriverWait(self.driver, 10).until(reports_option_present, "Could not find Reports option.") 
             renderers_select = Select(self.driver.find_elements_by_class_name('home_select_content')[0])
             renderers_select.select_by_visible_text('Reports')
-            # Wait for Reports options to populate 
-            time.sleep(60)            
-            content_present = expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "option[value='{}']".format(app_name)))
-            WebDriverWait(self.driver, 10).until(content_present, "Could not find {} in Reports options.".format(app_name))            
-            report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
-            report_select.select_by_visible_text(app_name)
-            # Add available content to grid
-            content_select = Select(self.driver.find_elements_by_class_name('home_select_content')[2])
-            dropzone = 'dropzone1'
-            for content in content_select.options[1:]:
-                content.click()
-                add_button = self.driver.find_element_by_xpath("//*[@id='{}']/a".format(dropzone))
-                add_button.click()
-                if dropzone == 'dropzone1':
-                    dropzone = 'dropzone2'
-                else:
-                    dropzone = 'dropzone1'
-                time.sleep(2) # allow report to be added before adding the next one
+            # Wait for Reports options to populate          
+            content_present = expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "option[value='{}']".format(report_options[0])))
+            WebDriverWait(self.driver, 10).until(content_present, "Could not find {} in Reports options.".format(report_options[0]))               
+            for report_option in report_options:         
+                report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
+                report_select.select_by_visible_text(report_option)
+                time.sleep(5) # wait for report options to load
+                # Add available content to grid
+                content_select = Select(self.driver.find_elements_by_class_name('home_select_content')[2])
+                dropzone = 'dropzone1'
+                for content in content_select.options[skip:]:
+                    content.click()
+                    add_button = self.driver.find_element_by_xpath("//*[@id='{}']/a".format(dropzone))
+                    add_button.click()
+                    if dropzone == 'dropzone1':
+                        dropzone = 'dropzone2'
+                    else:
+                        dropzone = 'dropzone1'
+                    time.sleep(2) # allow report to be added before adding the next one
             close_popup = self.driver.find_element_by_css_selector('a.icon-cross-circle:nth-child(1)')
             close_popup.click()
             # Verify correct number of reports added 
@@ -174,6 +176,7 @@ class AppWebDriver(object):
             # Open 'Configure'
             menu_icon = self.driver.find_element_by_class_name('icon-menu')
             menu_icon.click()
+            time.sleep(2) # wait for menu to fully appear for move_to_element
             configure_menu = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Configure']")
             actions = ActionChains(self.driver)
             actions.move_to_element(configure_menu)
@@ -181,10 +184,11 @@ class AppWebDriver(object):
             # Open the 'Configure' sub menu
             menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = '{}']".format(menu))
             menu_option.click()
-            time.sleep(2) # wait for select options to populate        
+            time.sleep(2) # wait for 'Selected' options to populate        
         
     # Helper function to update the 'Selected' column with the given configuration    
     def update_selected_configuration(self, configuration, new_fields):
+            time.sleep(2) # wait for 'Selected' options to populate 
             available_select = Select(self.driver.find_element_by_id('select_0'))   
             # Remove all 'Selected' fields
             selected_select = Select(self.driver.find_element_by_id('select_1'))
@@ -256,7 +260,6 @@ class AppWebDriver(object):
                 section_caption_input.send_keys(section_name)
                 section_ok_button = self.driver.find_element_by_id('ok_button')
                 section_ok_button.click()
-            time.sleep(2) # wait for selected options to update
                 
             # Add new Selected fields
             self.update_selected_configuration(configuration, new_fields)
@@ -323,12 +326,13 @@ class AppWebDriver(object):
             actions = ActionChains(self.driver)
             actions.context_click(number_column)
             actions.perform()
+            time.sleep(2) # wait for menu to fully appear for move_to_element
             configure_menu = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Configure']")
             actions = ActionChains(self.driver)            
             actions.move_to_element(configure_menu)
             actions.perform()
             list_layout_menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'List Layout']")
-            list_layout_menu_option.click()
+            list_layout_menu_option.click()    
             # Add new Selected fields
             self.update_selected_configuration(configuration, new_fields)
         except Exception, e:
@@ -339,7 +343,7 @@ class AppWebDriver(object):
 
     def get_visual_task_board_url(self, table_name, state_variables):  
         success = True
-        log = "Visual Task Board for {} configured successfully.".format(table_name)
+        log = "Retrieved visual task board url for {} successfully.".format(table_name)
         try:
             self.driver.get("https://{}.service-now.com/{}.do".format(self.instance_prefix, table_name))
             number_column = self.driver.find_element_by_xpath("//a[text() = 'State']")

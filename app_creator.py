@@ -121,7 +121,7 @@ class AppCreator(object):
         if response.status_code == 200:
             if not response.json()['result']:
                 success = True
-                log = "The {} table does not exist.".format(table_name)
+                log = "The {} table does not exist (expected).".format(table_name)
         elif response.status_code == 401:
             log = "Invalid username/password, could not authenticate request."
         else:

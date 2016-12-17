@@ -53,17 +53,21 @@ class PMAppCreator(AppCreator):
                                     "Configure 'Project Task' form layout."),
                             8: (self.configure_list_layout,
                                     "Configure 'Project List' & 'Project Task List' list layout."),
-                            9: (self.setup_project_app_roles,
+                            9: (self.get_project_taskboard_url,
+                                    "Get 'Project' task board url."),
+                            10: (self.setup_project_app_roles,
                                     "Create project app role and apply to 'Project'."),
-                            10: (self.setup_project_group_roles,
+                            11: (self.setup_project_group_roles,
                                     "Create 'Project Manager' group roles."),
-                            11: (self.create_reports,
+                            12: (self.create_reports,
                                     "Create various project reports."),
-                            12: (self.create_modules,
+                            13: (self.add_reports,
+                                     "Add reports to overview."),                                   
+                            14: (self.create_modules,
                                     "Create project modules."),
-                            13: (self.create_email_notification_records,
+                            15: (self.create_email_notification_records,
                                     "Create email notifications."),
-                            14: (self.create_business_rule_records,
+                            16: (self.create_business_rule_records,
                                     "Create business rules.")
                          }      
                 
@@ -264,7 +268,7 @@ class PMAppCreator(AppCreator):
     
         # Assign project_manager role to project create/delete access itil to write
         url = "https://{}.service-now.com/api/now/table/sys_dictionary?sysparm_query="\
-                "name%3Du_project_task%5Einternal_type%3Dcollection&sysparm_limit=1{}".format(self.instance_prefix)
+                "name%3Du_project_task%5Einternal_type%3Dcollection&sysparm_limit=1".format(self.instance_prefix)
         project_task_sys_id, log = self.get_json_response_key('sys_id', url)
 
         if not project_task_sys_id:
@@ -368,6 +372,10 @@ class PMAppCreator(AppCreator):
                                 })
         return self.verify_post_data(url, post_data)
         
+    def add_reports(self):
+        # Add all created reports to overview page
+        return self.web_driver.add_reports('project', ['Project', 'Project Task'], 6) # 6 reports expected        
+        
     def create_modules(self):
         # Create sys_portal_page for overview model
         url = "https://{}.service-now.com/api/now/table/sys_portal_page".format(self.instance_prefix)
@@ -410,7 +418,7 @@ class PMAppCreator(AppCreator):
                                     'link_type': 'DIRECT',
                                     'application': 'Project Management',
                                     'roles': 'project_manager',
-                                    'argument': self.state_variables['task_board_url']
+                                    'query': self.state_variables['task_board_url']
                                 })
         success, log = self.verify_post_data(url, post_data)
 
@@ -808,7 +816,7 @@ class PMAppCreator(AppCreator):
         return self.verify_post_data(url, post_data)
         
     def create_business_rule_records(self):
-        # Create email notification record for when Project commented
+        # Require preceding task
         url = "https://{}.service-now.com/api/now/table/sys_script".format(self.instance_prefix)
         post_data = json.dumps({
                                    'sys_script_action': 'INSERT_OR_UPDATE',
@@ -818,7 +826,7 @@ class PMAppCreator(AppCreator):
                                    'when': 'before',
                                    'name': 'Preceding Task Enforcement',
                                    'collection': 'u_project_task',
-                                   'filter_condition': 'stateVALCHANGES^u_preceding_task.active=true',
+                                   'filter_condition': 'stateVALCHANGES^u_preceding_task.active=true^u_preceding_taskISNOTEMPTY',
                                    'message': """<p>There is a dependency entered on the completion of task ${{current.u_preceding_task}}</p>
                                                 <p>Until the preceding task is completed, work on the current task should not begin.</p>
                                                 """
