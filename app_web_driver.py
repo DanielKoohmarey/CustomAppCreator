@@ -138,8 +138,9 @@ class AppWebDriver(object):
             renderers_select = Select(self.driver.find_elements_by_class_name('home_select_content')[0])
             renderers_select.select_by_visible_text('Reports')
             # Wait for Reports options to populate          
-            content_present = expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "option[value='{}']".format(report_options[0])))
-            WebDriverWait(self.driver, 10).until(content_present, "Could not find {} in Reports options.".format(report_options[0]))               
+            report_option_present = expected_conditions.presence_of_element_located((By.XPATH,
+                                    "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0]))) # note xpath 1 indexed
+            WebDriverWait(self.driver, 10).until(report_option_present, "Could not find '{}' in Reports options.".format(report_options[0]))               
             for report_option in report_options:         
                 report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
                 report_select.select_by_visible_text(report_option)
@@ -253,6 +254,8 @@ class AppWebDriver(object):
                 section_select.select_by_visible_text(section_name)
             else:
                 # Create new section
+                new_section_present = expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "option[value='.new']"))
+                WebDriverWait(self.driver, 5).until(new_section_present, "Could not find 'New..' section option.")  
                 section_select.select_by_visible_text('New...')
                 section_prompt_present = expected_conditions.presence_of_element_located((By.ID, 'glide_prompt_answer'))
                 WebDriverWait(self.driver, 5).until(section_prompt_present, "Could not find new section prompt.")                
@@ -275,7 +278,15 @@ class AppWebDriver(object):
         log = "Related Lists for {} configured successfully.".format(table_name)
         try:
             self.open_configure_menu(table_name, 'Related Lists')
-            available_select = Select(self.driver.find_element_by_id('select_0'))
+            # Remove all 'Selected' fields
+            selected_select = Select(self.driver.find_element_by_id('select_1'))
+            remove_selected_button = self.driver.find_element_by_xpath("//a[contains(@class, 'icon-chevron-left')]")       
+            for selected in selected_select.options:
+                selected.click()
+                remove_selected_button.click()
+            # Add configuration fields to 'Selected'
+            available_select = Select(self.driver.find_element_by_id('select_0'))       
+            available_select.deselect_all()
             add_available_button = self.driver.find_element_by_class_name('icon-chevron-right')
             for add_to_selected in configuration:
                 available_select.select_by_visible_text(add_to_selected)

@@ -60,11 +60,11 @@ class PMAppCreator(AppCreator):
                             11: (self.setup_project_group_roles,
                                     "Create 'Project Manager' group roles."),
                             12: (self.create_reports,
-                                    "Create various project reports."),
-                            13: (self.add_reports,
-                                     "Add reports to overview."),                                   
-                            14: (self.create_modules,
+                                    "Create various project reports."),                                  
+                            13: (self.create_modules,
                                     "Create project modules."),
+                            14: (self.add_reports,
+                                     "Add reports to overview."), 
                             15: (self.create_email_notification_records,
                                     "Create email notifications."),
                             16: (self.create_business_rule_records,
@@ -372,10 +372,6 @@ class PMAppCreator(AppCreator):
                                 })
         return self.verify_post_data(url, post_data)
         
-    def add_reports(self):
-        # Add all created reports to overview page
-        return self.web_driver.add_reports('project', ['Project', 'Project Task'], 6) # 6 reports expected        
-        
     def create_modules(self):
         # Create sys_portal_page for overview model
         url = "https://{}.service-now.com/api/now/table/sys_portal_page".format(self.instance_prefix)
@@ -556,6 +552,10 @@ class PMAppCreator(AppCreator):
                                 })
         
         return self.verify_post_data(url, post_data)
+
+    def add_reports(self):
+        # Add all created reports to overview page
+        return self.web_driver.add_reports('project', ['Project', 'Project Task'], 6) # 6 reports expected   
 
     def create_email_notification_records(self):
         # Create email notification record for when Project commented
