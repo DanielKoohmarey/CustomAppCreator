@@ -24,6 +24,7 @@ Dependencies:
 """
 import json
 import requests
+import time
 
 from app_creator import AppCreator
 
@@ -113,8 +114,8 @@ class PMAppCreator(AppCreator):
     def configure_project_form_layouts(self):
         # Configure 'Project' form layout        
         expected_selected = ['|- begin_split -|', 'Number', 'Portfolio', 'Priority',
-                             'Configuration item [+]', '|- split -|', 'Assignment group [+]', 'Assigned to [+]',
-                            'State', 'Project Size','|- end_split -|', 'Short description','Description']
+                             'Configuration item [+]', '|- split -|', 'State', 'Project Size','Assignment group [+]',
+                             'Assigned to [+]','|- end_split -|', 'Short description','Description']
         new_fields = { 'Portfolio' : 'Choice', 'Project Size' : 'Choice'}    
         success, log = self.web_driver.configure_form_layout('u_project', 'Project', expected_selected, new_fields)
         
@@ -481,8 +482,7 @@ class PMAppCreator(AppCreator):
                                     'order': '500',
                                     'link_type': 'LIST',
                                     'name': 'u_project',
-                                    'application': 'Project Management',
-                                    'filter': 'active=true^EQ'
+                                    'application': 'Project Management'
                                  })
         success, log = self.verify_post_data(url, post_data)
 
@@ -547,13 +547,13 @@ class PMAppCreator(AppCreator):
                                     'order': '900',
                                     'link_type': 'LIST',
                                     'name': 'u_project_task',
-                                    'application': 'Project Management',
-                                    'filter': 'active=true^EQ'
+                                    'application': 'Project Management'
                                 })
         
         return self.verify_post_data(url, post_data)
 
     def add_reports(self):
+        time.sleep(60) #TODO: remove this if we are waiting between steps 5 min
         # Add all created reports to overview page
         return self.web_driver.add_reports('project', ['Project', 'Project Task'], 6) # 6 reports expected   
 
@@ -568,13 +568,13 @@ class PMAppCreator(AppCreator):
                                     'recipient_fields': "opened_by,assigned_to,watch_list",
                                     'collection': 'u_project',
                                     'condition': 'commentsVALCHANGES^EQ',
-                                    'subject': "Project ${{number}} -- comments added",
-                                    'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                       <div>Click here to view Project: ${{URI_REF}}</div>
+                                    'subject': "Project ${number} -- comments added",
+                                    'message_html': """<div>Short Description: ${short_description}</div>
+                                                       <div>Click here to view Project: ${URI_REF}</div>
                                                        <div><hr/></div>
-                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Priority: ${priority}</div>
                                                        <div>Comments:</div>
-                                                       <div>${{comments}}</div>
+                                                       <div>${comments}</div>
                                                        <div>&nbsp;</div>"""
                                 })
         success, log = self.verify_post_data(url, post_data)
@@ -593,13 +593,13 @@ class PMAppCreator(AppCreator):
                                    'recipient_fields': "opened_by,assigned_to,watch_list",
                                    'collection': 'u_project_task',
                                    'condition': 'commentsVALCHANGES^EQ',
-                                   'subject': "Project Task ${{number}} -- comments added",
-                                   'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                       <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                   'subject': "Project Task ${number} -- comments added",
+                                   'message_html': """<div>Short Description: ${short_description}</div>
+                                                       <div>Click here to view Project Task: ${URI_REF}</div>
                                                        <div><hr/></div>
-                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Priority: ${priority}</div>
                                                        <div>Comments:</div>
-                                                       <div>${{comments}}</div>
+                                                       <div>${comments}</div>
                                                        <div>&nbsp;</div>"""
                                 })
         success, log = self.verify_post_data(url, post_data)
@@ -619,13 +619,13 @@ class PMAppCreator(AppCreator):
                                    'recipient_fields': "assigned_to,work_notes_list",
                                    'collection': 'u_project',
                                    'condition': 'work_notesVALCHANGES^EQ',
-                                   'subject': "Project ${{number}} -- work notes added",
-                                   'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                      <div>Click here to view Project: ${{URI_REF}}</div>
+                                   'subject': "Project ${number} -- work notes added",
+                                   'message_html': """<div>Short Description: ${short_description}</div>
+                                                      <div>Click here to view Project: ${URI_REF}</div>
                                                       <div><hr/></div>
-                                                      <div>Priority: ${{priority}}</div>
+                                                      <div>Priority: ${priority}</div>
                                                       <div>Work Notes:</div>
-                                                      <div>${{work_notes}}</div>
+                                                      <div>${work_notes}</div>
                                                       <div>&nbsp;</div>"""
                                 })
         success, log = self.verify_post_data(url, post_data)
@@ -644,13 +644,13 @@ class PMAppCreator(AppCreator):
                                     'recipient_fields': "assigned_to,work_notes_list",
                                     'collection': 'u_project_task',
                                     'condition': 'work_notesVALCHANGES^EQ',
-                                    'subject': "Project Task ${{number}} -- work notes added",
-                                    'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                      <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                    'subject': "Project Task ${number} -- work notes added",
+                                    'message_html': """<div>Short Description: ${short_description}</div>
+                                                      <div>Click here to view Project Task: ${URI_REF}</div>
                                                       <div><hr/></div>
-                                                      <div>Priority: ${{priority}}</div>
+                                                      <div>Priority: ${priority}</div>
                                                       <div>Work Notes:</div>
-                                                      <div>${{work_notes}}</div>
+                                                      <div>${work_notes}</div>
                                                       <div>&nbsp;</div>"""
                                 })
         success, log = self.verify_post_data(url, post_data)
@@ -669,16 +669,16 @@ class PMAppCreator(AppCreator):
                                     'recipient_fields': "opened_by,watch_list,parent.assigned_to",
                                     'collection': 'u_project',
                                     'condition': 'activeCHANGESTOfalse^EQ',
-                                    'subject': "Project ${{number}} has been closed",
-                                    'message_html': """<div>Your {} ${{number}} has been closed.""" \
+                                    'subject': "Project ${number} has been closed",
+                                    'message_html': """<div>Your Project ${number} has been closed."""\
                                                     """Please contact the service desk if you have any questions.</div>
-                                                    <div>Closed by: ${{closed_by}}</div>
+                                                    <div>Closed by: ${closed_by}</div>
                                                     <div>&nbsp;</div>
-                                                    <div>Short description: ${{short_description}}</div>
-                                                    <div>Click here to view: ${{URI_REF}}</div>
+                                                    <div>Short description: ${short_description}</div>
+                                                    <div>Click here to view: ${URI_REF}</div>
                                                     <div><hr/></div>
                                                     <div>Comments:</div>
-                                                    <div>${{comments}}</div>
+                                                    <div>${comments}</div>
                                                     <div>&nbsp;</div>"""
                                 })
         success, log = self.verify_post_data(url, post_data)
@@ -697,16 +697,16 @@ class PMAppCreator(AppCreator):
                                    'recipient_fields': "opened_by,watch_list,parent.assigned_to",
                                    'collection': 'u_project_task',
                                    'condition': 'activeCHANGESTOfalse^EQ',
-                                   'subject': "Project Task ${{number}} has been closed",
-                                   'message_html': """<div>Your Project Task${{number}} has been closed.""" \
+                                   'subject': "Project Task ${number} has been closed",
+                                   'message_html': """<div>Your Project Task${number} has been closed.""" \
                                                    """Please contact the service desk if you have any questions.</div>
-                                                   <div>Closed by: ${{closed_by}}</div>
+                                                   <div>Closed by: ${closed_by}</div>
                                                    <div>&nbsp;</div>
-                                                   <div>Short description: ${{short_description}}</div>
-                                                   <div>Click here to view: ${{URI_REF}}</div>
+                                                   <div>Short description: ${short_description}</div>
+                                                   <div>Click here to view: ${URI_REF}</div>
                                                    <div><hr/></div>
                                                    <div>Comments:</div>
-                                                   <div>${{comments}}</div>
+                                                   <div>${comments}</div>
                                                    <div>&nbsp;</div>"""
                                 })           
         success, log = self.verify_post_data(url, post_data)
@@ -725,14 +725,14 @@ class PMAppCreator(AppCreator):
                                    'recipient_fields': 'assignment_group',
                                    'collection': 'u_project',
                                    'condition': 'assigned_toISEMPTY^assignment_groupVALCHANGES^EQ',
-                                   'subject': "Project ${{number}} has been assigned to group" \
-                                              "${{assignment_group}}",
-                                   'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                       <div>Click here to view Project: ${{URI_REF}}</div>
+                                   'subject': "Project ${number} has been assigned to group "\
+                                              "${assignment_group}",
+                                   'message_html': """<div>Short Description: ${short_description}</div>
+                                                       <div>Click here to view Project: ${URI_REF}</div>
                                                        <div><hr/></div>
-                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Priority: ${priority}</div>
                                                        <div>Comments:</div>
-                                                       <div>${{comments}}</div>
+                                                       <div>${comments}</div>
                                                        <div>&nbsp;</div>"""
                                })
         success, log = self.verify_post_data(url, post_data)
@@ -751,14 +751,14 @@ class PMAppCreator(AppCreator):
                                    'recipient_fields': 'assignment_group',
                                    'collection': 'u_project_task',
                                    'condition': 'assigned_toISEMPTY^assignment_groupVALCHANGES^EQ',
-                                   'subject': "Project Task ${{number}} has been assigned to group" \
-                                              "${{assignment_group}}",
-                                   'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                       <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                   'subject': "Project Task ${number} has been assigned to group "\
+                                              "${assignment_group}",
+                                   'message_html': """<div>Short Description: ${short_description}</div>
+                                                       <div>Click here to view Project Task: ${URI_REF}</div>
                                                        <div><hr/></div>
-                                                       <div>Priority: ${{priority}}</div>
+                                                       <div>Priority: ${priority}</div>
                                                        <div>Comments:</div>
-                                                       <div>${{comments}}</div>
+                                                       <div>${comments}</div>
                                                        <div>&nbsp;</div>"""
                                })
         success, log = self.verify_post_data(url, post_data)
@@ -778,13 +778,13 @@ class PMAppCreator(AppCreator):
                                     'recipient_fields': 'assigned_to',
                                     'collection': 'u_project',
                                     'condition': 'assigned_toVALCHANGES^assigned_toISNOTEMPTY^EQ',
-                                    'subject': "Project ${{number}} has been assigned to you",
-                                    'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                        <div>Click here to view Project: ${{URI_REF}}</div>
+                                    'subject': "Project ${number} has been assigned to you",
+                                    'message_html': """<div>Short Description: ${short_description}</div>
+                                                        <div>Click here to view Project: ${URI_REF}</div>
                                                         <div><hr /></div>
-                                                        <div>Priority: ${{priority}}</div>
+                                                        <div>Priority: ${priority}</div>
                                                         <div>Comments:</div>
-                                                        <div>${{comments}}</div>
+                                                        <div>${comments}</div>
                                                         <div>&nbsp;</div>"""
                                 })
         success, log = self.verify_post_data(url, post_data)
@@ -804,13 +804,13 @@ class PMAppCreator(AppCreator):
                                     'recipient_fields': 'assigned_to',
                                     'collection': 'u_project_task',
                                     'condition': 'assigned_toVALCHANGES^assigned_toISNOTEMPTY^EQ',
-                                    'subject': "Project Task ${{number}} has been assigned to you",
-                                    'message_html': """<div>Short Description: ${{short_description}}</div>
-                                                        <div>Click here to view Project Task: ${{URI_REF}}</div>
+                                    'subject': "Project Task ${number} has been assigned to you",
+                                    'message_html': """<div>Short Description: ${short_description}</div>
+                                                        <div>Click here to view Project Task: ${URI_REF}</div>
                                                         <div><hr /></div>
-                                                        <div>Priority: ${{priority}}</div>
+                                                        <div>Priority: ${priority}</div>
                                                         <div>Comments:</div>
-                                                        <div>${{comments}}</div>
+                                                        <div>${comments}</div>
                                                         <div>&nbsp;</div>"""
                                 })
         return self.verify_post_data(url, post_data)
@@ -827,7 +827,7 @@ class PMAppCreator(AppCreator):
                                    'name': 'Preceding Task Enforcement',
                                    'collection': 'u_project_task',
                                    'filter_condition': 'stateVALCHANGES^u_preceding_task.active=true^u_preceding_taskISNOTEMPTY',
-                                   'message': """<p>There is a dependency entered on the completion of task ${{current.u_preceding_task}}</p>
+                                   'message': """<p>There is a dependency entered on the completion of task ${current.u_preceding_task}</p>
                                                 <p>Until the preceding task is completed, work on the current task should not begin.</p>
                                                 """
                                 })
@@ -842,8 +842,6 @@ class PMAppCreator(AppCreator):
         post_data = json.dumps({
                                     'sys_script_action': 'INSERT_OR_UPDATE',
                                     'action_update': True,
-                                    'abort_action': True,
-                                    'add_message': True,
                                     'when': 'before',
                                     'name': 'Project - Set Work Start',
                                     'collection': 'u_project',
@@ -878,10 +876,8 @@ class PMAppCreator(AppCreator):
         post_data = json.dumps({
                                     'sys_script_action': 'INSERT_OR_UPDATE',
                                     'action_update': True,
-                                    'abort_action': True,
-                                    'add_message': True,
                                     'when': 'before',
-                                    'name': 'Project - Set Work Start',
+                                    'name': 'Project Task- Set Work Start',
                                     'collection': 'u_project_task',
                                     'filter_condition': 'stateCHANGESTO2^EQ',
                                     'template': 'work_start=javascript:gs.nowDateTime();^EQ'
@@ -898,9 +894,20 @@ class PMAppCreator(AppCreator):
                                    'sys_script_action': 'INSERT_OR_UPDATE',
                                    'action_update': True,
                                    'when': 'before',
-                                   'name': 'Project - Set Work End',
+                                   'name': 'Project Task- Set Work End',
                                    'collection': 'u_project_task',
                                    'filter_condition': 'activeCHANGESTOfalse^EQ',
                                    'template': 'work_end=javascript:gs.nowDateTime();^EQ'
                                 })
         return self.verify_post_data(url, post_data)
+        
+    def create_assignment_rules(self):
+        # Create default assignment for all records on new table, new group
+        url = "https://{}.service-now.com/api/now/table/sysrule_assignment".format(self.instance_prefix)
+        post_data = json.dumps({
+                                    'active': True,
+                                    'name': "Project Assignment",
+                                    'table': "u_project",
+                                    'group': "Project Managers"
+                                })
+        return self.verify_post_data(url, post_data)        

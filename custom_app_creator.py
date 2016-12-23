@@ -286,7 +286,7 @@ class CustomAppCreator(AppCreator):
                                     'recipient_fields': 'assignment_group',
                                     'collection': self.table_name,
                                     'condition': 'assigned_toISEMPTY^assignment_groupVALCHANGES^EQ',
-                                    'subject': "{} ${{number}} has been assigned to group"\
+                                    'subject': "{} ${{number}} has been assigned to group "\
                                                 "${{assignment_group}}".format(self.app_name),
                                     'message_html': """<div>Short Description: ${{short_description}}</div>
                                                     <div>Click here to view {}: ${{URI_REF}}</div>

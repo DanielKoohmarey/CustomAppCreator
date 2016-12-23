@@ -139,15 +139,15 @@ class AppWebDriver(object):
             renderers_select.select_by_visible_text('Reports')
             # Wait for Reports options to populate          
             report_option_present = expected_conditions.presence_of_element_located((By.XPATH,
-                                    "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0]))) # note xpath 1 indexed
-            WebDriverWait(self.driver, 10).until(report_option_present, "Could not find '{}' in Reports options.".format(report_options[0]))               
+                                    "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0])))
+            WebDriverWait(self.driver, 10).until(report_option_present, "Could not find '{}' in Reports options.".format(report_options[0]))
+            dropzone = 'dropzone1'              
             for report_option in report_options:         
                 report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
                 report_select.select_by_visible_text(report_option)
                 time.sleep(5) # wait for report options to load
                 # Add available content to grid
                 content_select = Select(self.driver.find_elements_by_class_name('home_select_content')[2])
-                dropzone = 'dropzone1'
                 for content in content_select.options[skip:]:
                     content.click()
                     add_button = self.driver.find_element_by_xpath("//*[@id='{}']/a".format(dropzone))
@@ -363,6 +363,8 @@ class AppWebDriver(object):
             actions.perform()
             show_menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Show Visual Task Board']")        
             show_menu_option.click()
+            vtb_present = expected_conditions.presence_of_element_located((By.CLASS_NAME, "vtb-navbar"))
+            WebDriverWait(self.driver, 10).until(vtb_present, "Could not load visual taskbar.")
             url = self.driver.current_url.lstrip("https://{}.service-now.com".format(self.instance_prefix))
             state_variables['task_board_url'] = url
         except Exception, e:
