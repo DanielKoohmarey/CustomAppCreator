@@ -295,7 +295,8 @@ class PMAppCreator(AppCreator):
                                     'title': "Planned Project Start",
                                     'table': 'u_project',
                                     'type': 'calendar',
-                                    'field': 'u_planned_start'
+                                    'field': 'u_planned_start',
+                                    'trend_field': 'u_planned_start'
                                 })
         success, log = self.verify_post_data(url, post_data)
 
@@ -310,7 +311,8 @@ class PMAppCreator(AppCreator):
                                     'title': "Planned Project Task Start",
                                     'table': 'u_project_task',
                                     'type': 'calendar',
-                                    'field': 'u_planned_start'
+                                    'field': 'u_planned_start_date',
+                                    'trend_field': 'u_planned_start_date'
                                 })
         success, log = self.verify_post_data(url, post_data)
 
@@ -325,7 +327,7 @@ class PMAppCreator(AppCreator):
                                     'title': "Overdue Project Tasks",
                                     'table': 'u_project_task',
                                     'type': 'list',
-                                    'filter': 'u_planned_end<javascript:gs.minutesAgoStart(0)^active=true'
+                                    'filter': 'u_planned_end_date<javascript:gs.minutesAgoStart(0)^active=true'
                                 })
         success, log = self.verify_post_data(url, post_data)
 

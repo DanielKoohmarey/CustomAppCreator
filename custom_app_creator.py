@@ -394,6 +394,7 @@ class CustomAppCreator(AppCreator):
                                     'type': 'forward',
                                     'table': self.table_name,
                                     'active': True,
+                                    'order': '95',
                                     'stop_processing': True,
                                     'filter_condition': 'recipientsLIKE{}+{}@service-now.com^EQ'.format(
                                                             self.instance_prefix, self.app_prefix),
@@ -580,7 +581,7 @@ class CustomAppCreator(AppCreator):
 
         # Create Open Custom app Records by Priority report
         post_data = json.dumps({
-                                    'title': "Opened {} this month by Priority".format(self.app_name),
+                                    'title': "Opened {} Records this month by Priority".format(self.app_name),
                                     'table': self.table_name,
                                     'field': 'priority',
                                     'type': 'bar',
