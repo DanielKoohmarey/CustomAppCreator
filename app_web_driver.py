@@ -27,6 +27,7 @@ killall -e firefox to when testing to ensure clean up
 """
 import time
 import traceback
+import urllib2
 
 from selenium import webdriver
 #from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
@@ -129,17 +130,18 @@ class AppWebDriver(object):
         success = True
         log = "Added {} reports successfully.".format(expected)
         try:
+            self.driver.get("https://{}.service-now.com/cache.do".format(self.instance_prefix)) # ensure 'Reports' options get updated
             self.driver.get("https://{}.service-now.com/home.do?sysparm_view={}_overview".format(self.instance_prefix, overview_name))
             # Open add content popup
             add_content_button = self.driver.find_element_by_xpath("//button[text()='Add content']")
             add_content_button.click()
             reports_option_present = expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "option[value='Reports']"))
-            WebDriverWait(self.driver, 10).until(reports_option_present, "Could not find Reports option.") 
+            WebDriverWait(self.driver, 10).until(reports_option_present, "Could not find Reports option.")
             renderers_select = Select(self.driver.find_elements_by_class_name('home_select_content')[0])
             renderers_select.select_by_visible_text('Reports')
-            # Wait for Reports options to populate          
+            # Wait for Reports options to populate
             report_option_present = expected_conditions.presence_of_element_located((By.XPATH,
-                                    "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0])))
+                                "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0])))
             WebDriverWait(self.driver, 10).until(report_option_present, "Could not find '{}' in Reports options.".format(report_options[0]))
             dropzone = 'dropzone1'              
             for report_option in report_options:         
@@ -189,6 +191,8 @@ class AppWebDriver(object):
         
     # Helper function to update the 'Selected' column with the given configuration    
     def update_selected_configuration(self, configuration, new_fields):
+            available_select_exists = expected_conditions.presence_of_element_located((By.ID, 'select_0'))
+            WebDriverWait(self.driver, 20).until(available_select_exists)
             time.sleep(2) # wait for 'Selected' options to populate 
             available_select = Select(self.driver.find_element_by_id('select_0'))   
             # Remove all 'Selected' fields
@@ -332,18 +336,10 @@ class AppWebDriver(object):
         success = True
         log = "List layout for {} configured successfully.".format(table_name)
         try:
-            self.driver.get("https://{}.service-now.com/{}.do".format(self.instance_prefix, table_name))
-            number_column = self.driver.find_element_by_xpath("//a[text() = 'Number']")
-            actions = ActionChains(self.driver)
-            actions.context_click(number_column)
-            actions.perform()
-            time.sleep(2) # wait for menu to fully appear for move_to_element
-            configure_menu = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Configure']")
-            actions = ActionChains(self.driver)            
-            actions.move_to_element(configure_menu)
-            actions.perform()
-            list_layout_menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'List Layout']")
-            list_layout_menu_option.click()    
+            self.driver.get("https://{0}.service-now.com/nav_to.do?uri=%2Fslushbucket.do%3Fsysparm_view%3D%26sysparm_referring_url%3D"\
+                            "{1}_list.do%26sysparm_form%3Dlist%26sysparm_user_list%3Dfalse%26sysparm_list%3D"\
+                            "{1}%26sysparm_collection%3D".format(self.instance_prefix, table_name))
+            self.driver.switch_to.frame(self.driver.find_element_by_tag_name('iframe'))
             # Add new Selected fields
             self.update_selected_configuration(configuration, new_fields)
         except Exception, e:
@@ -356,17 +352,15 @@ class AppWebDriver(object):
         success = True
         log = "Retrieved visual task board url for {} successfully.".format(table_name)
         try:
-            self.driver.get("https://{}.service-now.com/{}.do".format(self.instance_prefix, table_name))
-            number_column = self.driver.find_element_by_xpath("//a[text() = 'State']")
-            actions = ActionChains(self.driver)
-            actions.context_click(number_column)
-            actions.perform()
-            show_menu_option = self.driver.find_element_by_xpath("//div[contains(@class, 'context_item') and text() = 'Show Visual Task Board']")        
-            show_menu_option.click()
+            self.driver.get("https://{0}.service-now.com/nav_to.do?uri=%2F$vtb_get.do%3F"\
+                            "sysparm_action%3Dboard_show%26sysparm_field%3Dstate%26sysparm_table%3D"\
+                            "{1}%26sysparm_query%3Dactive%253Dtrue".format(self.instance_prefix, table_name))
+            self.driver.switch_to.frame(self.driver.find_element_by_tag_name('iframe'))
             vtb_present = expected_conditions.presence_of_element_located((By.CLASS_NAME, "vtb-navbar"))
-            WebDriverWait(self.driver, 10).until(vtb_present, "Could not load visual taskbar.")
-            url = self.driver.current_url.lstrip("https://{}.service-now.com".format(self.instance_prefix))
-            state_variables['task_board_url'] = url
+            WebDriverWait(self.driver, 20).until(vtb_present, "Could not load visual taskbar.")
+            task_board_url = self.driver.current_url.replace("https://{}.service-now.com/nav_to.do?uri=%2F".format(self.instance_prefix), '')
+            task_board_url = urllib2.unquote(urllib2.unquote(task_board_url)) # url is double encoded
+            state_variables['task_board_url'] = task_board_url
         except Exception, e:
             success = False
             log = traceback.format_exc(e)

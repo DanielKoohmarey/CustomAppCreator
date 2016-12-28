@@ -12,6 +12,9 @@ Run python gmail_wrapper.py --noauth_local_webserver to set up credentials on ex
 
 Dependencies: 
     sudo pip install --upgrade google-api-python-client
+    
+Resources used:
+    https://developers.google.com/gmail/api/quickstart/python
 """
 import httplib2
 import os
@@ -32,9 +35,9 @@ class GmailWrapper(object):
     SCOPES = 'https://www.googleapis.com/auth/gmail.modify'
     CLIENT_SECRET_FILE = 'client_secret.json' # https://console.developers.google.com/apis/credentials
     APPLICATION_NAME = "Pericror Custom App Creator"
-    AUTHORIZED_FROM = "danielkoohmarey@gmail.com"
+    AUTHORIZED_FROM = "info@pericror.com"
     SENDER = 'pericror@gmail.com'
-    RECIPIENT = 'results@pericror.com'
+    RECIPIENT = "results@pericror.com"
 
     def __init__(self):
         credentials = self.get_credentials()

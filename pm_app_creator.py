@@ -24,7 +24,6 @@ Dependencies:
 """
 import json
 import requests
-import time
 
 from app_creator import AppCreator
 
@@ -54,7 +53,7 @@ class PMAppCreator(AppCreator):
                                     "Configure 'Project Task' form layout."),
                             8: (self.configure_list_layout,
                                     "Configure 'Project List' & 'Project Task List' list layout."),
-                            9: (self.get_project_taskboard_url,
+                            9: (self.get_project_task_board_url,
                                     "Get 'Project' task board url."),
                             10: (self.setup_project_app_roles,
                                     "Create project app role and apply to 'Project'."),
@@ -69,7 +68,9 @@ class PMAppCreator(AppCreator):
                             15: (self.create_email_notification_records,
                                     "Create email notifications."),
                             16: (self.create_business_rule_records,
-                                    "Create business rules.")
+                                    "Create business rules."),
+                            17: (self.create_assignment_rules,
+                                    "Create 'Project Managers' assignment rule.")
                          }      
                 
     def check_for_project_tables(self):
@@ -175,21 +176,21 @@ class PMAppCreator(AppCreator):
     def configure_list_layout(self):
         # Configure u_project_list list layout
         configuration = ['Number', 'Short description', 'Portfolio', 'Priority', 'State', 'Assigned to [+]']
-        success,log = self.web_driver.configure_list_layout('u_project_list', configuration, {})
+        success,log = self.web_driver.configure_list_layout('u_project', configuration, {})
         
         if not success:
             return success, log
         else:
-            self.log(log)   
+            self.log(log)
         
         # Configure u_project_task layout
         configuration = ['Number', 'Short description', 'Priority', 'State', 'Assigned to [+]']
-        success, log = self.web_driver.configure_list_layout('u_project_task_list', configuration, {})
+        success, log = self.web_driver.configure_list_layout('u_project_task', configuration, {})
         return success, log      
         
-    def get_project_taskboard_url(self):
+    def get_project_task_board_url(self):
         # Retrieves the taskboard url and stores it in self.state_variables['task_board_url']
-        return self.web_driver.get_visual_task_board_url('u_project_list', self.state_variables)
+        return self.web_driver.get_visual_task_board_url('u_project', self.state_variables)
 
     def setup_project_app_roles(self):                   
         # Create the custom application role
@@ -555,7 +556,6 @@ class PMAppCreator(AppCreator):
         return self.verify_post_data(url, post_data)
 
     def add_reports(self):
-        time.sleep(60) #TODO: remove this if we are waiting between steps 5 min
         # Add all created reports to overview page
         return self.web_driver.add_reports('project', ['Project', 'Project Task'], 6) # 6 reports expected   
 

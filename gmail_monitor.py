@@ -17,6 +17,7 @@ import datetime
 import gmail_wrapper
 import traceback
 
+from email.utils import parsedate_tz, mktime_tz
 from custom_app_creator import CustomAppCreator
 from pm_app_creator import PMAppCreator
 
@@ -34,13 +35,20 @@ def main():
             if not msg_body or msg_body[0] != "Automation Request":
                 wrapper.mark_as_read(unread_msg_id)
                 continue
-            print "{} Parsing email from {}".format(datetime.datetime.now(), msg_data['date'])
+            # Process emails a minimum of 4 hours later
+            timezone_time = parsedate_tz(msg_data['date'])
+            epoch_time = mktime_tz(timezone_time)
+            received_time = datetime.utcfromtimestamp(epoch_time)
+            if ((datetime.datetime.now() - received_time) // 3600) < 4:
+                continue
+            formatted_time = received_time.strftime("%d-%m-%y %I:%M:%S %p")
+            print "{} Parsing email from {}".format(datetime.datetime.now(), formatted_time)
             # Parse out run variables
             run_variables = {}
             for line in msg_body[1:]:
-                if not line:
+                if not line or ':' not in line:
                     continue
-                variable, value = line.split(': ')
+                variable, value = line.split(':')
                 run_variables[variable] = value.strip()
             # Create the appropriate automation class
             app_creator = None                
@@ -72,7 +80,7 @@ def main():
             
             html = "<h2>{} {} Automation Report</h2>".format(app_creator.instance_prefix, run_variables['Type'])
             html += app_creator.get_html_results()
-            html += "<h4> Automation request received at {}</h4>".format(msg_data['date'])
+            html += "<h4> Automation request received at {}</h4>".format(formatted_time)
             plain = "\r\n".join(['{}. {}'.format(step, desc) for step, desc in app_creator.logged])
             
             message = wrapper.create_message(subject, plain, html)
