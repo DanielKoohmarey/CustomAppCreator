@@ -205,6 +205,7 @@ class AppCreator(object):
         html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
                 "'{0}{1}'><b>Step</b></td><td style='{0}{1}'><b>Description</b>"\
                 "</td></tr></thead><tbody>".format(td_style, td_head_style)
+        total_progress = self.logged.pop()
         prev_state = 0
         for state, description in self.logged:
             if 'SUCCESS:' in description:
@@ -228,5 +229,6 @@ class AppCreator(object):
                 row_highlight = 'background-color:#ffffff'
             prev_state = state
         html += "</tbody></table>"
+        html += "<h4>{}</h4>".format(total_progress[1])
         
         return html
