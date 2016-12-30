@@ -38,11 +38,12 @@ def main():
             # Process emails a minimum of 4 hours later
             timezone_time = parsedate_tz(msg_data['date'])
             epoch_time = mktime_tz(timezone_time)
-            received_time = datetime.utcfromtimestamp(epoch_time)
-            if ((datetime.datetime.now() - received_time) // 3600) < 4:
+            received_time = datetime.datetime.utcfromtimestamp(epoch_time)
+            if ((datetime.datetime.now() - received_time).total_seconds() // 3600) < 4:
                 continue
-            formatted_time = received_time.strftime("%d-%m-%y %I:%M:%S %p")
-            print "{} Parsing email from {}".format(datetime.datetime.now(), formatted_time)
+            formatted_time = received_time.strftime("%m-%d-%y %I:%M:%S %p")
+            current_time = datetime.datetime.now().strftime("%m-%d-%y %I:%M:%S %p")
+            print "{} Parsing email from {}".format(current_time, formatted_time)
             # Parse out run variables
             run_variables = {}
             for line in msg_body[1:]:
@@ -76,7 +77,7 @@ def main():
             success = 'FAILED'
             if app_creator.state_variables['state'] > len(app_creator.state_map):
                 success = 'SUCCEEDED'
-            subject = "{} creation: {}".format(app_creator.app_name, success)        
+            subject = "{} {}: {}".format(run_variables['Instance Prefix'], run_variables['Type'], success)        
             
             html = "<h2>{} {} Automation Report</h2>".format(app_creator.instance_prefix, run_variables['Type'])
             html += app_creator.get_html_results()

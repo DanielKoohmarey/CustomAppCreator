@@ -44,7 +44,7 @@ class AppCreator(object):
  
     def get_progress_string(self, state_started = False):
         completion_state = float(len(self.state_map))
-        progress = round(((self.state_variables['state']-state_started)/completion_state)*100)
+        progress = int(((self.state_variables['state']-state_started)/completion_state)*100)
         progress_string = "Step {} of {} ({}%) ".format(self.state_variables['state'],completion_state,
                                                         progress)
         return progress_string
@@ -149,10 +149,14 @@ class AppCreator(object):
                 break
            
             self.state_variables['state'] += 1
+            time.sleep(300) # wait 5 min between steps
                 
         time_elapsed = time.time() - start_time
-        self.log("Run completed in {}min {}s.".format(str(time_elapsed // 60).split('.')[0],
-                                                    str(time_elapsed % 60).split('.')[0]))                                                    
+        total_progress = int(((self.state_variables['state'])/len(self.state_map))*100)
+        self.log("Run completed {}% in {}hr {}min {}s.".format( total_progress,
+                                                                int(time_elapsed // 3600),
+                                                                int(time_elapsed // 60),
+                                                                int(time_elapsed % 60)))                                                  
            
     def save_state(self):
         backup_state = open('{}_backup_state.pkl'.format(self.instance_prefix), 'wb')
@@ -164,9 +168,10 @@ class AppCreator(object):
         td_style = 'padding:10px;text-align:left;border: 1px solid #ddd;'
         td_head_style = 'background-color:#00aeef;color:white;'        
         # Run variable report
-        row_highlight = 'background-color:#ffffff'  
+        row_highlight = 'background-color:#ffffff'
+        html = ""
         if self.run_variables:
-            html = "<h3>Run Variables</h3>"
+            html += "<h3>Run Variables</h3>"
             html += "<table style='border-collapse:collapse;'><thead><tr><td style="\
                     "'{0}{1}'><b>Variable</b></td><td style='{0}{1}'><b>Value</b>"\
                     "</td></tr></thead><tbody>".format(td_style, td_head_style)

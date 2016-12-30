@@ -126,11 +126,10 @@ class AppWebDriver(object):
         
         return success, log
 
-    def add_reports(self, overview_name, report_options, expected, skip = 0):
+    def add_reports(self, overview_name, report_options, expected, skip = 0, retry = True):
         success = True
         log = "Added {} reports successfully.".format(expected)
-        try:
-            self.driver.get("https://{}.service-now.com/cache.do".format(self.instance_prefix)) # ensure 'Reports' options get updated
+        try:          
             self.driver.get("https://{}.service-now.com/home.do?sysparm_view={}_overview".format(self.instance_prefix, overview_name))
             # Open add content popup
             add_content_button = self.driver.find_element_by_xpath("//button[text()='Add content']")
@@ -140,12 +139,25 @@ class AppWebDriver(object):
             renderers_select = Select(self.driver.find_elements_by_class_name('home_select_content')[0])
             renderers_select.select_by_visible_text('Reports')
             # Wait for Reports options to populate
-            report_option_present = expected_conditions.presence_of_element_located((By.XPATH,
-                                "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0])))
-            WebDriverWait(self.driver, 10).until(report_option_present, "Could not find '{}' in Reports options.".format(report_options[0]))
-            dropzone = 'dropzone1'              
+            if retry:
+                try:
+                    report_option_present = expected_conditions.presence_of_element_located((By.XPATH,
+                                        "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0])))
+                    WebDriverWait(self.driver, 10).until(report_option_present, 
+                                        "Could not find '{}' in Reports options.".format(report_options[0]))
+                except TimeoutException:
+                    # Retry if we can't find the element
+                    print "Could not find '{}' in Reports options, retrying.".format(report_options[0])
+                    return self.add_reports(overview_name, report_options, expected, skip, False)
+            else:
+                report_option_present = expected_conditions.presence_of_element_located((By.XPATH,
+                                    "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0])))
+                WebDriverWait(self.driver, 10).until(report_option_present, 
+                                    "Could not find '{}' in Reports options.".format(report_options[0]))
+            # Add reports from all report options specified
+            report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
+            dropzone = 'dropzone1'           
             for report_option in report_options:         
-                report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
                 report_select.select_by_visible_text(report_option)
                 time.sleep(5) # wait for report options to load
                 # Add available content to grid
