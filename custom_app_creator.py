@@ -65,18 +65,18 @@ class CustomAppCreator(AppCreator):
                                      "Retrieve the page sys id & create modules."),
                             14: (self.create_reports,
                                      "Create reports."),
-                            15: (self.add_reports,
-                                     "Add reports to overview."),
-                            16: (self.create_assignment_rules,
+                            15: (self.create_assignment_rules,
                                      "Create assignment rules."),                                      
-                            17: (self.setup_slas,
+                            16: (self.setup_slas,
                                      "Create SLAs & save P1-P4 sla sys ids & create escalation rule."),
-                            18: (self.create_catalog_category,
+                            17: (self.create_catalog_category,
                                      "Create catalog category & save category sys id."),
-                            19: (self.create_record_producer,
+                            18: (self.create_record_producer,
                                      "Create record producer & save producer sys id."),
-                            20: (self.create_catalog_item,
-                                     "Create catalog item & save item sys id.")
+                            19: (self.create_catalog_item,
+                                     "Create catalog item & save item sys id."),
+                            20: (self.add_reports,
+                                     "Add reports to overview."),
                         }                                           
                         
     def check_for_custom_table(self):                             

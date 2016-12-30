@@ -63,14 +63,14 @@ class PMAppCreator(AppCreator):
                                     "Create various project reports."),                                  
                             13: (self.create_modules,
                                     "Create project modules."),
-                            14: (self.add_reports,
-                                     "Add reports to overview."), 
-                            15: (self.create_email_notification_records,
+                            14: (self.create_email_notification_records,
                                     "Create email notifications."),
-                            16: (self.create_business_rule_records,
+                            15: (self.create_business_rule_records,
                                     "Create business rules."),
-                            17: (self.create_assignment_rules,
-                                    "Create 'Project Managers' assignment rule.")
+                            16: (self.create_assignment_rules,
+                                    "Create 'Project Managers' assignment rule."),
+                            17: (self.add_reports,
+                                     "Add reports to overview.")                                    
                          }      
                 
     def check_for_project_tables(self):
