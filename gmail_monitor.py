@@ -39,9 +39,11 @@ def main():
             timezone_time = parsedate_tz(msg_data['date'])
             epoch_time = mktime_tz(timezone_time)
             received_time = datetime.datetime.utcfromtimestamp(epoch_time)
-            if ((datetime.datetime.now() - received_time).total_seconds() // 3600) < 4:
-                continue
             formatted_time = received_time.strftime("%m-%d-%y %I:%M:%S %p")
+            hours_since_rx = ((datetime.datetime.now() - received_time).total_seconds() // 3600)
+            if hours_since_rx < 4:
+                print "Skipping email received at {}, only {} hrs old".format(formatted_time, hours_since_rx)
+                continue
             current_time = datetime.datetime.now().strftime("%m-%d-%y %I:%M:%S %p")
             print "{} Parsing email from {}".format(current_time, formatted_time)
             # Parse out run variables
@@ -90,8 +92,8 @@ def main():
             wrapper.mark_as_read(unread_msg_id)
             
         else:
-            print "{} Sleeping 5min before checking email... ".format(datetime.datetime.now())
-            time.sleep(300) # check mail every 5 min
+            print "{} Sleeping 15min before checking email... ".format(datetime.datetime.now())
+            time.sleep(900) # check mail every 15 min
 
 
 if __name__ == '__main__':
