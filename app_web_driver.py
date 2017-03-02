@@ -49,10 +49,11 @@ class AppWebDriver(object):
         #binary = FirefoxBinary('/home/ubuntu/firefox/firefox')
         #firefox = DesiredCapabilities.FIREFOX
         #firefox['marionette'] = False
-        #self.driver = webdriver.Firefox(firefox_binary=binary, capabilities = firefox)          
+        #self.driver = webdriver.Firefox(firefox_binary=binary, capabilities = firefox)
         self.driver = webdriver.Firefox()
         self.driver.maximize_window()
-        self.logged_in = False        
+        self.logged_in = False
+        self.missing_fields = []
         self.login()
 
     def login(self):
@@ -233,7 +234,9 @@ class AppWebDriver(object):
                 else:
                     # Create new field
                     if add_to_selected not in new_fields:
-                        return False, "Missing form layout field: {}".format(add_to_selected)                   
+                        print "WARNING! Missing form layout field: {}".format(add_to_selected)
+                        self.missing_fields.append(add_to_selected)
+                        continue                 
                     new_field_name_input = self.driver.find_element_by_id('newOption')            
                     new_field_name_input.send_keys(add_to_selected)
                     new_field_type_select = Select(self.driver.find_element_by_id('newType'))
