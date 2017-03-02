@@ -230,5 +230,8 @@ class AppCreator(object):
             prev_state = state
         html += "</tbody></table>"
         html += "<h4>{}</h4>".format(total_progress[1])
-        
+        if self.web_driver.missing_fields:
+            missing_field_text = ', '.join(self.web_driver.missing_fields)
+            html += "<h4><span style='color:red;font-weight:bold;'>WARNING!</span>"\
+                    "Missing form layout fields: {}</h4>".format(missing_field_text)
         return html
