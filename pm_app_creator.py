@@ -297,7 +297,8 @@ class PMAppCreator(AppCreator):
                                     'table': 'u_project',
                                     'type': 'calendar',
                                     'field': 'u_planned_start',
-                                    'trend_field': 'u_planned_start'
+                                    'trend_field': 'u_planned_start',
+                                    'user': 'GLOBAL'
                                 })
         success, log = self.verify_post_data(url, post_data)
 
@@ -313,7 +314,8 @@ class PMAppCreator(AppCreator):
                                     'table': 'u_project_task',
                                     'type': 'calendar',
                                     'field': 'u_planned_start_date',
-                                    'trend_field': 'u_planned_start_date'
+                                    'trend_field': 'u_planned_start_date',
+                                    'user': 'GLOBAL'
                                 })
         success, log = self.verify_post_data(url, post_data)
 
@@ -322,13 +324,14 @@ class PMAppCreator(AppCreator):
         else:
             self.log(log)
 
-        # Create Overdue Project Task Report
+        # Create overdue project task report
         url = "https://{}.service-now.com/api/now/table/sys_report".format(self.instance_prefix)
         post_data = json.dumps({
                                     'title': "Overdue Project Tasks",
                                     'table': 'u_project_task',
                                     'type': 'list',
-                                    'filter': 'u_planned_end_date<javascript:gs.minutesAgoStart(0)^active=true'
+                                    'filter': 'u_planned_end_date<javascript:gs.minutesAgoStart(0)^active=true',
+                                    'user': 'GLOBAL'
                                 })
         success, log = self.verify_post_data(url, post_data)
 
@@ -337,12 +340,13 @@ class PMAppCreator(AppCreator):
         else:
             self.log(log)
 
-        # Projects by portfolio
+        # Create projects by portfolio report
         post_data = json.dumps({
                                    'title': 'Projects by Portfolio',
                                    'table': 'u_project',
                                    'field': 'u_portfolio',
                                    'type': 'pie',
+                                   'user': 'GLOBAL'
                                })
         success, log = self.verify_post_data(url, post_data)
         if not success:
@@ -350,14 +354,15 @@ class PMAppCreator(AppCreator):
         else:
             self.log(log)
 
-        # Create open projects by project manager
+        # Create open projects by project manager report
         post_data = json.dumps({
                                    'title': "Open Projects by Project Manager",
                                    'table': 'u_project',
                                    'field': 'assigned_to',
                                    'trend_field': 'state',
                                    'type': 'bar',
-                                   'filter': 'active=true^EQ'
+                                   'filter': 'active=true^EQ',
+                                   'user': 'GLOBAL'
                                })
         success, log = self.verify_post_data(url, post_data)
         if not success:
@@ -365,14 +370,15 @@ class PMAppCreator(AppCreator):
         else:
             self.log(log)
 
-        # Create Open project tasks by project
+        # Create open project tasks by project report
         post_data = json.dumps({
                                     'title': "Open Project Tasks by Project",
                                     'table': 'u_project_task',
                                     'field': 'parent',
                                     'trend_field': 'state',
                                     'type': 'bar',
-                                    'filter': 'active=true^EQ'
+                                    'filter': 'active=true^EQ',
+                                    'user': 'GLOBAL'
                                 })
         return self.verify_post_data(url, post_data)
         
