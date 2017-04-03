@@ -54,7 +54,6 @@ class AppWebDriver(object):
         self.driver.maximize_window()
         self.logged_in = False
         self.missing_fields = []
-        self.login()
 
     def login(self):
         try:        
@@ -71,6 +70,10 @@ class AppWebDriver(object):
                 self.logged_in = True
         except Exception, e:
             print "Failed to login to {}\n{}".format(self.instance_prefix, e)
+        log = "Logged in to {} successfully.".format(self.instance_prefix)
+        if not self.logged_in:
+            log = "Failed to login to {}, invalid credentials.".format(self.instance_prefix)
+        return self.logged_in, log
 
     def end_session(self):
         self.driver.get("https://{}.service-now.com/logout.do".format(self.instance_prefix))

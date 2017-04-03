@@ -106,11 +106,7 @@ class AppCreator(object):
         return success, log
             
     def check_login_credentials(self):
-        success = self.web_driver.logged_in
-        log = "Logged in to {} successfully.".format(self.instance_prefix)
-        if not success:
-            log = "Failed to login to {}, invalid credentials.".format(self.instance_prefix)
-        return success, log
+        return self.web_driver.login()
             
     def check_for_table(self, table_name):
         success = False
