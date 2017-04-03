@@ -555,7 +555,8 @@ class CustomAppCreator(AppCreator):
                                     'title': "My Open {} Issues".format(self.app_name),
                                     'table': self.table_name,
                                     'type': 'list',
-                                    'filter': 'opened_byDYNAMIC90d1921e5f510100a9ad2572f2b477fe^active=true'
+                                    'filter': 'opened_byDYNAMIC90d1921e5f510100a9ad2572f2b477fe^active=true',
+                                    'user': 'GLOBAL'
                                 })
         success, log = self.verify_post_data(url, post_data)
         
@@ -570,7 +571,8 @@ class CustomAppCreator(AppCreator):
                                     'table': self.table_name,
                                     'field': 'assigned_to',
                                     'type': 'bar',
-                                    'filter': 'active=true^EQ'
+                                    'filter': 'active=true^EQ',
+                                    'user': 'GLOBAL'
                                 })
         success, log = self.verify_post_data(url, post_data)
         
@@ -586,7 +588,8 @@ class CustomAppCreator(AppCreator):
                                     'field': 'priority',
                                     'type': 'bar',
                                     'filter':'opened_atONThis month@javascript:gs.beginningOfThisMonth()'\
-                                                '@javascript:gs.endOfThisMonth()'
+                                                '@javascript:gs.endOfThisMonth()',
+                                    'user': 'GLOBAL'
                                 })
         success, log = self.verify_post_data(url, post_data)
         
@@ -601,7 +604,8 @@ class CustomAppCreator(AppCreator):
                                     'table': self.table_name,
                                     'field': 'state',
                                     'type': 'pie',
-                                    'filter': 'active=true^EQ'
+                                    'filter': 'active=true^EQ',
+                                    'user': 'GLOBAL'
                                 })
         success, log = self.verify_post_data(url, post_data)
         
@@ -616,7 +620,8 @@ class CustomAppCreator(AppCreator):
                                     'table': self.table_name,
                                     'field': 'escalation',
                                     'type': 'bar',
-                                    'filter': 'active=true^EQ'
+                                    'filter': 'active=true^EQ',
+                                    'user': 'GLOBAL'
                                 })
         return self.verify_post_data(url, post_data)
 
