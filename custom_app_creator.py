@@ -15,6 +15,7 @@ import pickle
 import requests
 import sys
 import os
+import getpass
 
 from app_creator import AppCreator
 
@@ -554,6 +555,7 @@ class CustomAppCreator(AppCreator):
         post_data = json.dumps({
                                     'title': "My Open {} Issues".format(self.app_name),
                                     'table': self.table_name,
+                                    'field': '',
                                     'type': 'list',
                                     'filter': 'opened_byDYNAMIC90d1921e5f510100a9ad2572f2b477fe^active=true',
                                     'user': 'GLOBAL'
@@ -972,31 +974,46 @@ class CustomAppCreator(AppCreator):
                                 })
         return self.verify_post_data(url, post_data)                                                                   
         
-
 if __name__ == '__main__':
-    """
-    if len(sys.argv) < 6 :
-        print "Usage: {} [instance prefix] [user] [password] [app name]"\
-                "[app prefix] (state file)".format(sys.argv[0])
-    """
-    instance_prefix = 'dkoohsc5' 
-    user = 'admin'
-    pwd = 'admin'
-    auth_pair = user,pwd
-    app_name = 'newApp30'
-    app_prefix = 'app30'
-    state_data = {}
+    state_data = {}  
 
-    if len(sys.argv) > 6:
-        state_path = sys.argv[6]
-        if not os.path.isfile(state_path):
-            print "Could not find state file: {}".format(state_path)
-        else:
-            state_file = open(state_path, "wb")
-            state_data = pickle.load(state_file)        
+    if(len(sys.argv) == 2 and sys.argv[1] == 'interactive'):  
+        instance_prefix = raw_input("Enter Instance Prefix:\n").strip()
+        user = raw_input("Enter User:\n").strip()
+        password = getpass.getpass("Enter Password:\n")
+        app_name = raw_input("Enter App Name:\n").strip()
+        app_prefix = raw_input("Enter App Prefix:\n").strip()
+        
+        print "Running Custom App Creator with the following settings:\n"\
+                "Instance Prefix: {0}\nUser: {1}\nPass: {2}\nApp Name: {3}\n"\
+                "App Prefix: {4}".format(instance_prefix, user, "*"*len(password),
+                                    app_name, app_prefix)  
+        
+        app_creator = CustomAppCreator(instance_prefix, user, password, app_name, 
+                                       app_prefix, state_data)                            
+        app_creator.run()
+        app_creator.web_driver.end_session()
+        
+    elif len(sys.argv) > 5:
+        if len(sys.argv) > 6:
+            state_path = sys.argv[6]
+            if not os.path.isfile(state_path):
+                print "Could not find state file: {}".format(state_path)
+            else:
+                state_file = open(state_path, "wb")
+                state_data = pickle.load(state_file)        
     
-    app_creator = CustomAppCreator(instance_prefix, user, pwd, app_name, 
-                             app_prefix, state_data)
-                             
-    app_creator.run()
-    app_creator.web_driver.end_session()
+        print "Running Custom App Creator with the following settings:\n"\
+                "Instance Prefix: {0}\nUser: {1}\nPass: {2}\nApp Name: {3}\n"\
+                "App Prefix: {4}".format(sys.argv[1], sys.argv[2], "*"*len(sys.argv[3]),
+                                    sys.argv[4], sys.argv[5])    
+        
+        app_creator = CustomAppCreator(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], 
+                                 sys.argv[5], state_data)
+                                 
+        app_creator.run()
+        app_creator.web_driver.end_session()
+        
+    else:
+        print "Usage:\n{0} interactive \n{0} [instance prefix] [user] [password] [app name]"\
+                "[app prefix] (state file)".format(sys.argv[0])

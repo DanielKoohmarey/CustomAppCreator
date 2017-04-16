@@ -24,6 +24,8 @@ Dependencies:
 """
 import json
 import requests
+import sys
+import getpass
 
 from app_creator import AppCreator
 
@@ -330,6 +332,7 @@ class PMAppCreator(AppCreator):
                                     'title': "Overdue Project Tasks",
                                     'table': 'u_project_task',
                                     'type': 'list',
+                                    'field': '',
                                     'filter': 'u_planned_end_date<javascript:gs.minutesAgoStart(0)^active=true',
                                     'user': 'GLOBAL'
                                 })
@@ -918,4 +921,40 @@ class PMAppCreator(AppCreator):
                                     'table': "u_project",
                                     'group': "Project Managers"
                                 })
-        return self.verify_post_data(url, post_data)        
+        return self.verify_post_data(url, post_data)
+    
+if __name__ == '__main__':
+    state_data = {}  
+
+    if(len(sys.argv) == 2 and sys.argv[1] == 'interactive'):
+        instance_prefix = raw_input("Enter Instance Prefix:\n").strip()
+        user = raw_input("Enter User:\n").strip()
+        password = getpass.getpass("Enter Password:\n")
+        
+        print "Running Project Management App Creator with the following settings:\n"\
+                "Instance Prefix: {0}\nUser: {1}\nPass: {2}".format(instance_prefix,
+                                                                user, "*"*len(password))
+        
+        app_creator = PMAppCreator(instance_prefix, user, password, state_data)               
+        app_creator.run()
+        app_creator.web_driver.end_session()
+        
+    elif len(sys.argv) > 3:
+        if len(sys.argv) > 4:
+            state_path = sys.argv[4]
+            if not os.path.isfile(state_path):
+                print "Could not find state file: {}".format(state_path)
+            else:
+                state_file = open(state_path, "wb")
+                state_data = pickle.load(state_file)        
+    
+        print "Running Project Management App Creator with the following settings:\n"\
+                "Instance Prefix: {0}\nUser: {1}\nPass: {2}".format(sys.argv[1],
+                                                                sys.argv[2], "*"*len(sys.argv[3]))  
+        
+        app_creator = PMAppCreator(sys.argv[1], sys.argv[2], sys.argv[3], state_data)              
+        app_creator.run()
+        app_creator.web_driver.end_session()
+        
+    else:
+        print "Usage:\n{0} interactive \n{0} [instance prefix] [user] [password]".format(sys.argv[0])    

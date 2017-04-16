@@ -145,7 +145,7 @@ class AppCreator(object):
                 break
            
             self.state_variables['state'] += 1
-            time.sleep(300) # wait 5 min between steps
+            time.sleep(5) # wait 5 sec between steps (should be 5 min if running on server)
                 
         time_elapsed = time.time() - start_time
         total_progress = int(((self.state_variables['state'])/len(self.state_map))*100)
