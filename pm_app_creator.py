@@ -67,11 +67,13 @@ class PMAppCreator(AppCreator):
                                     "Create project modules."),
                             14: (self.create_email_notification_records,
                                     "Create email notifications."),
-                            15: (self.create_business_rule_records,
+                            15: (self.create_inbound_email_actions,
+                                    "Create inbound email actions."),
+                            16: (self.create_business_rule_records,
                                     "Create business rules."),
-                            16: (self.create_assignment_rules,
+                            17: (self.create_assignment_rules,
                                     "Create 'Project Managers' assignment rule."),
-                            17: (self.add_reports,
+                            18: (self.add_reports,
                                      "Add reports to overview.")                                    
                          }      
                 
@@ -825,6 +827,36 @@ class PMAppCreator(AppCreator):
                                                         <div>&nbsp;</div>"""
                                 })
         return self.verify_post_data(url, post_data)
+
+    def create_inbound_email_actions(self):
+        # Create project from reply record
+        url = "https://{}.service-now.com/api/now/table/sysevent_in_email_action".format(self.instance_prefix)
+        post_data = json.dumps({
+                                    'name': "Update Project Record (Reply)",
+                                    'type': 'reply',
+                                    'table': 'u_project',
+                                    'active': 'true',
+                                    'stop_processing': 'true',
+                                    'template': 'commentsDYNAMIC367bf121ef3221002841f7f775c0fbe2^EQ'
+                                })                                          
+        success, log = self.verify_post_data(url, post_data)
+        
+        if not success:
+            return success, log
+        else:
+            self.log(log)
+
+        # Create project task from reply record       
+        post_data = json.dumps({
+                                    'name': "Update Project Task Record (Reply)",
+                                    'type': 'reply',
+                                    'table': 'u_project_task',
+                                    'active': 'true',
+                                    'stop_processing': 'true',
+                                    'template': 'commentsDYNAMIC367bf121ef3221002841f7f775c0fbe2^EQ'
+                                })
+        return self.verify_post_data(url, post_data)        
+        
         
     def create_business_rule_records(self):
         # Require preceding task

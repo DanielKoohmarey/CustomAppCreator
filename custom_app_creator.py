@@ -147,6 +147,14 @@ class CustomAppCreator(AppCreator):
         return self.verify_put_data(url, put_data)
 
     def set_custom_group_role(self):
+        # Check if the group record already exists
+        url = "https://{}.service-now.com/api/now/table/sys_user_group?"\
+                "sysparm_query=nameSTARTSWITH{}&sysparm_limit=1".format(self.instance_prefix, self.app_name)       
+        response = requests.get(url, auth=self.auth_pair, headers=self.json_headers)
+        if response.status_code == 200:
+            if response.json()['result']:
+                return True, "The {} group already exists, skipping creation.".format(self.app_name)
+        
         # Create the group record
         url = "https://{}.service-now.com/api/now/table/sys_user_group".format(self.instance_prefix) 
         post_data = json.dumps({
