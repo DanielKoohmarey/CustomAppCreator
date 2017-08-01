@@ -121,7 +121,7 @@ class AppWebDriver(object):
         
         return success, log
 
-    def add_reports(self, overview_name, report_options, expected, skip = 0, retry = True):
+    def add_reports(self, overview_name, report_options, expected, skip = 0):
         success = True
         log = "Added {} reports successfully.".format(expected)
         try:          
@@ -129,27 +129,16 @@ class AppWebDriver(object):
             # Open add content popup
             add_content_button = self.driver.find_element_by_xpath("//button[text()='Add content']")
             add_content_button.click()
-            renderers_select = Select(self.driver.find_elements_by_class_name('home_select_content')[0])
-            renderers_select.select_by_visible_text('Reports')          
-            # Wait for Reports options to populate
-            if retry:
-                # Workaround for issue where Reports does not contain option needed
-                try:
-                    report_option = self.driver.find_element_by_xpath(
-                                        "//*[contains(@class,'home_select_content')][2]/option[@value='{}']".format(report_options[0]))
-                except NoSuchElementException:
-                    # Retry if we can't find the element
-                    print "Could not find '{}' in Reports options, retrying.".format(report_options[0])
-                    return self.add_reports(overview_name, report_options, expected, skip, False)
-                    
+            renderers_select = Select(self.driver.find_element_by_xpath("(//select[@class='home_select_content'])[1]"))
+            renderers_select.select_by_visible_text('Reports')      
             # Add reports from all report options specified
-            report_select = Select(self.driver.find_elements_by_class_name('home_select_content')[1])
+            report_select = Select(self.driver.find_element_by_xpath("(//select[@class='home_select_content'])[2]"))
             dropzone = 'dropzone1'           
             for report_option in report_options:         
                 report_select.select_by_visible_text(report_option)
                 time.sleep(5) # wait for report options to load
                 # Add available content to grid
-                content_select = Select(self.driver.find_elements_by_class_name('home_select_content')[2])
+                content_select = Select(self.driver.find_element_by_xpath("(//select[@class='home_select_content'])[3]"))
                 for content in content_select.options[skip:]:
                     content.click()
                     add_button = self.driver.find_element_by_xpath("//*[@id='{}']/a".format(dropzone))
@@ -159,10 +148,8 @@ class AppWebDriver(object):
                     else:
                         dropzone = 'dropzone1'
                     time.sleep(2) # allow report to be added before adding the next one
-            close_popup = self.driver.find_element_by_css_selector('a.icon-cross-circle:nth-child(1)')
-            close_popup.click()
-            # Verify correct number of reports added 
-            reports_added = len(self.driver.find_elements_by_class_name('report_content'))
+            # Verify correct number of reports added (subtract 1 for report popup)
+            reports_added = len(self.driver.find_elements_by_class_name('report_content')) - 1
             if  reports_added != expected:
                 success = False
                 log = "{} of {} reports added.".format(reports_added, expected)

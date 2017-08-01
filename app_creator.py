@@ -141,7 +141,6 @@ class AppCreator(object):
             else:
                 self.log("{} FAILURE: {}".format(self.get_progress_string(True), log), False)
                 self.log("Ending run prematurely...", False)
-                self.save_state()
                 break
            
             self.state_variables['state'] += 1
@@ -152,13 +151,32 @@ class AppCreator(object):
         self.log("Run completed {}% in {}hr {}min {}s.".format( total_progress,
                                                                 int(time_elapsed // 3600),
                                                                 int(time_elapsed // 60),
-                                                                int(time_elapsed % 60)))                                                  
+                                                                int(time_elapsed % 60)))
+        self.save_state()
            
     def save_state(self):
         backup_state = open('{}_backup_state.pkl'.format(self.instance_prefix), 'wb')
         pickle.dump(self.state_variables, backup_state)
         backup_state.close()
-        self.log("State variables saved in {}_backup_state.pkl.".format(self.instance_prefix), False)
+        self.log("State variables saved in {}_{}_backup_state.pkl.".format(self.instance_prefix,
+                                                                            time.strftime("%Y-%m-%d")),
+                                                                            False)
+        
+        print "State Variables:\n"
+        for state_variable,value in self.state_variables.items():
+            print "{0}: {1}".format(state_variable, value)
+            
+        if self.web_driver.missing_fields:
+            missing_field_text = ', '.join(self.web_driver.missing_fields)
+            print "WARNING: Missing form layout fields {}".format(missing_field_text)
+
+        results = app_creator.get_html_results()
+        result_filename = "{0}_{1}_results.html".format(self.instance_prefix.lower(),
+                                                                time.strftime("%Y-%m-%d"))
+        print "Writing results to {}".format(result_filename)
+        result_file = open(result_filename, 'a')
+        result_file.write(self.get_html_results())
+        result_file.close()
         
     def get_html_results(self):
         td_style = 'padding:10px;text-align:left;border: 1px solid #ddd;'
