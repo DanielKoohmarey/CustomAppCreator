@@ -112,7 +112,7 @@ class AppCreator(object):
         success = False
         log = "The {} table already exists.".format(table_name)
         url = "https://{}.service-now.com/api/now/table/sys_dictionary?"\
-                "sysparm_query=name%3D{}&sysparm_limit=1".format(self.instance_prefix, table_name)
+                "sysparm_query=name={}&sysparm_limit=1".format(self.instance_prefix, table_name)
         response = requests.get(url, auth=self.auth_pair, headers=self.json_headers)
         if response.status_code == 200:
             if not response.json()['result']:

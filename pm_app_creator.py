@@ -78,7 +78,7 @@ class PMAppCreator(AppCreator):
                          }      
                 
     def check_for_project_tables(self):
-        success, log = self.check_for_table('Project')        
+        success, log = self.check_for_table('u_project')        
         
         if not success:
             return success, log
@@ -86,7 +86,7 @@ class PMAppCreator(AppCreator):
             self.log(log)
             
         # Check if 'Project Task' table exists
-        return self.check_for_table('Project Task')
+        return self.check_for_table('u_project_task')
 
     def create_project_tables(self):
         # Create the 'Project' table
@@ -101,7 +101,7 @@ class PMAppCreator(AppCreator):
             
         # Save the 'Project' app sys id                                                
         url = "https://{}.service-now.com/api/now/table/sys_app_application?" \
-                "sysparm_query=titleSTARTSWITH{}&sysparm_limit=1".format(self.instance_prefix,
+                "sysparm_query=title={}&sysparm_limit=1".format(self.instance_prefix,
                                                                         'Project Management')
         app_sys_id, log = self.get_json_response_key('sys_id', url)
         
