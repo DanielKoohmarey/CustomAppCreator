@@ -170,12 +170,12 @@ class AppCreator(object):
             missing_field_text = ', '.join(self.web_driver.missing_fields)
             print "WARNING: Missing form layout fields {}".format(missing_field_text)
 
-        results = app_creator.get_html_results()
+        results = self.get_html_results()
         result_filename = "{0}_{1}_results.html".format(self.instance_prefix.lower(),
                                                                 time.strftime("%Y-%m-%d"))
         print "Writing results to {}".format(result_filename)
         result_file = open(result_filename, 'a')
-        result_file.write(self.get_html_results())
+        result_file.write(results)
         result_file.close()
         
     def get_html_results(self):

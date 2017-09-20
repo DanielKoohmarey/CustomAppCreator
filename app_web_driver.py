@@ -130,7 +130,13 @@ class AppWebDriver(object):
             add_content_button = self.driver.find_element_by_xpath("//button[text()='Add content']")
             add_content_button.click()
             renderers_select = Select(self.driver.find_element_by_xpath("(//select[@class='home_select_content'])[1]"))
-            renderers_select.select_by_visible_text('Reports')      
+            renderers_select.select_by_visible_text('Reports')
+            #Ensure the report has been selected (bug fix for when selection does not error but does not occur)
+            if renderers_select.first_selected_option.text != 'Reports':
+                time.sleep(5)
+                renderers_select.select_by_visible_text('Reports')
+            else:
+                renderers_select.first_selected_option.click()
             # Add reports from all report options specified
             report_select = Select(self.driver.find_element_by_xpath("(//select[@class='home_select_content'])[2]"))
             dropzone = 'dropzone1'           
