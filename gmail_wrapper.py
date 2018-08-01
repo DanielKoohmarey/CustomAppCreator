@@ -39,11 +39,24 @@ class GmailWrapper(object):
     SENDER = 'pericror@gmail.com'
     RECIPIENT = 'results@pericror.com'
 
-    def __init__(self):
-        credentials = self.get_credentials()
-        http = credentials.authorize(httplib2.Http())
-        self.service = discovery.build('gmail', 'v1', http=http)
-
+def __init__(self):
+        self.credentials = self.get_credentials()
+        self.http = self.credentials.authorize(httplib2.Http())
+        self.service = discovery.build('gmail', 'v1', http=self.http)
+        
+    def refresh_credentials(self, expires_in = 600):
+        """Checks if the auth credentials expire soon, and requests new ones if needed
+        
+        Args:
+            expires_in: The number of seconds in the future to check for expiration
+            
+        Returns:
+            datetime, the current credential expiration time
+        """
+        if self.credentials.get_access_token().expires_in <= expires_in:
+            self.credentials.refresh(self.http)
+        return self.credentials.get_access_token().expires_in
+    
     def get_credentials(self):
         """Gets valid user credentials from storage.
     
@@ -73,6 +86,11 @@ class GmailWrapper(object):
         return credentials
 
     def get_unread_message_id(self):
+        """Retrieve the first unread email available.
+        
+        Returns:
+            The message id of the unread email if it exists, otherwise None.
+        """
         msg_id = None    
         
         try:
@@ -88,31 +106,48 @@ class GmailWrapper(object):
         return msg_id
 
     def get_message_data(self, msg_id):
-        to_return = {}
+        """Retrieve data from a given email.
+        
+        Args:
+            msg_id: The id of the email message to retrieve the body from.
+        
+        Returns:
+            The email body.
+        """
+        message_data = {}
         
         try:
-            message = self.service.users().messages().get(userId='me', id=msg_id,
-                                                     format='raw').execute()
-            msg_str = base64.urlsafe_b64decode(message['raw'].encode('ASCII'))
-            mime_msg = email.message_from_string(msg_str)
+            message = self.service.users().messages().get(userId='me', id=msg_id).execute()
 
-            body = ""
-            if mime_msg.is_multipart():
-                for payload in mime_msg.get_payload():
-                    if payload.get_content_type() == 'text/plain':
-                        body = payload.get_payload()
+            headers = {}
+            for header in message['payload']['headers']:
+                headers[header['name']] = header['value']
+                
+            message_data['headers'] = headers
+
+            if 'multipart' in message['payload']['mimeType']:            
+                for part in message['payload']['parts']:
+                    if part['mimeType'] == 'text/plain':
+                        data = part['body']['data']
                         break
             else:
-                body = mime_msg.get_payload()
+                data = message['payload']['body']['data']
+                
+            message_data['body'] = base64.urlsafe_b64decode(data.encode('ASCII'))
+        except Exception as e:
+            print 'An error occurred: %s' % e
             
-            to_return = { 'date' : mime_msg['Date'], 'body' : body }
-            
-        except errors.HttpError, error:
-            print 'An error occurred: %s' % error
-            
-        return to_return
+        return message_data
 
     def mark_as_read(self, msg_id):
+        """Mark an email as read.
+        
+        Args:
+            msg_id: The id of the email message to mark as read.
+        
+        Returns:
+            A boolean indicating message has been marked as read successfully.
+        """
         success = False
         
         try:
@@ -125,30 +160,67 @@ class GmailWrapper(object):
             print 'An error occurred: %s' % error 
             
         return success
-
+    
     def create_message(self, subject, plain, html):
+        # Returns a message object addressed to self.RECIPIENT
+        return self.create_message(self.RECIPIENT, subject, plain, html)
+        
+    def create_message(self, to, subject, plain, html, attachment = None):
         """Create a message for an email.
         
         Args:
+            to: The destination of the email message.
             subject: The subject of the email message.
             plain: The text of the email message.
             html: The html of the email message.
-        
+            attachment: The path to the attachment.
+            
         Returns:
             An object containing a base64url encoded email object.
         """
-        message = MIMEMultipart('alternative')
-        
-        plain_part = MIMEText(plain, 'plain')
-        html_part = MIMEText(html, 'html')
-        message.attach(plain_part)
-        message.attach(html_part)
-
-        message['To'] = self.RECIPIENT
+        message = MIMEMultipart('mixed') #https://stackoverflow.com/questions/3902455/mail-multipart-alternative-vs-multipart-mixed
+        message['To'] = to
         message['From'] = self.SENDER
         message['Subject'] = subject
+
+        message_text = MIMEMultipart('alternative')
+        plain_part = MIMEText(plain, 'plain')
+        message_text.attach(plain_part)
         
-        return {'raw': base64.urlsafe_b64encode(message.as_string())}        
+        html_part = MIMEText(html, 'html')
+        message_text.attach(html_part)
+        message.attach(message_text)
+        
+        if attachment:
+            content_type, encoding = mimetypes.guess_type(attachment)
+    
+            msg = None
+            if content_type is None or encoding is not None:
+                content_type = 'application/octet-stream'
+            main_type, sub_type = content_type.split('/', 1)
+            if main_type == 'text':
+                fp = open(attachment, 'rb')
+                msg = MIMEText(fp.read(), _subtype=sub_type)
+                fp.close()
+            elif main_type == 'image':
+                fp = open(attachment, 'rb')
+                msg = MIMEImage(fp.read(), _subtype=sub_type)
+                fp.close()
+            elif main_type == 'audio':
+                fp = open(attachment, 'rb')
+                msg = MIMEAudio(fp.read(), _subtype=sub_type)
+                fp.close()
+            else:
+                fp = open(attachment, 'rb')
+                msg = MIMEBase(main_type, sub_type)
+                msg.set_payload(fp.read())
+                fp.close()
+            filename = os.path.basename(attachment)
+            
+            msg.add_header('Content-Disposition', 'attachment', filename=filename)
+            message.attach(msg)  
+        
+        return {'raw': base64.urlsafe_b64encode(message.as_string())} 
         
     def send_message(self, message):
         """Send an email message.
@@ -171,5 +243,26 @@ class GmailWrapper(object):
         
         return success
         
-if __name__ == '__main__':
+def test():
     wrapper = GmailWrapper()
+    # Get an unread (unprocessed) email
+    unread_msg_id = wrapper.get_unread_message_id()
+    if unread_msg_id:
+        # Process the email
+        msg_data = wrapper.get_message_data(unread_msg_id)
+        msg_body = msg_data['body']
+        headers = msg_data['headers']
+        print "Processing message from: " + headers['From']
+        plain = "Body: {}".format(msg_body)
+        html = "<h3>Body:</h3>{}".format(msg_body)
+        # Send an email response the contains the original email
+        message = wrapper.create_message(headers['From'],
+            'Re: ' + headers['Subject'], plain, html)
+        wrapper.send_message(message)
+        # Mark the message as read so we don't process it again
+        wrapper.mark_as_read(unread_msg_id)
+        print "Sent email copy to " + headers['From'] 
+        
+if __name__ == '__main__':
+    if 'test' in sys.argv:
+        test()
